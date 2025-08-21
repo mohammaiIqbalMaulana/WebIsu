@@ -1,0 +1,1282 @@
+<body class="bg-light">
+    <div class="container-fluid py-4 px-4">
+        <!-- Header dengan Tombol Filter -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Daftar Laporan</h3>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="bi bi-funnel"></i> Filter
+                <% if (hasFilter) { %><span class="badge bg-danger ms-1">!</span><% } %>
+            </button>
+            <a href="/laporan/tambah" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Tambah
+            </a>
+            <a href="/laporan/calendar" class="btn btn-outline-primary">
+                <i class="bi bi-calendar-range"></i> Clastering
+            </a>
+        </div>
+    </div>
+        
+        <!-- Info Filter Aktif -->
+        <% if (hasFilter) { %>
+            <div class="alert alert-info d-flex justify-content-between align-items-center pe-3">
+                <span>
+                    <i class="bi bi-info-circle me-2"></i>
+                    Ditemukan <strong><%= pagination.totalData %></strong> data dengan filter: <strong><%= filterInfo %></strong>
+                </span>
+                <a href="/laporan" class="btn btn-sm btn-outline-secondary me-4">
+                    <i class="bi bi-x-circle"></i> Reset Filter
+                </a>
+            </div>
+        <% } %>
+
+        <!-- Data Per Halaman dan Info -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="limitSelect" class="form-label">Data Per Halaman</label>
+                    <select class="form-select" id="limitSelect" name="limit">
+                        <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
+                        <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                        <option value="20" <%= pagination.limit == 20 ? 'selected' : '' %>>20</option>
+                        <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                        <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+                        <option value="1000" <%= pagination.limit == 1000 ? 'selected' : '' %>>1000</option>
+                        <option value="10000" <%= pagination.limit == 10000 ? 'selected' : '' %>>10000</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <% if (pagination && pagination.totalData > 0) { %>
+                <div class="text-end">
+                    <small class="text-muted">
+                        Menampilkan <strong><%= pagination.startRecord %></strong> sampai
+                        <strong><%= pagination.endRecord %></strong> dari
+                        <strong><%= pagination.totalData %></strong> data
+                        <% if (hasFilter) { %>(dengan filter)<% } %>
+                    </small>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Loading Overlay untuk Table -->
+        <div id="tableLoading" class="position-relative" style="display: none;">
+            <div class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 10;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Memuat data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Data -->
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered align-middle" id="mainTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>No</th>
+                        <th>Jenis</th>
+                        <th>Tanggal</th>
+                        <th>Judul</th>
+                        <th>Pimpinan</th>
+                        <th>Jenis Media</th>
+                        <th>File</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (!data || data.length === 0) { %>
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <% if (hasFilter) { %>
+                                    <i class="bi bi-search display-4 d-block mb-3 text-muted"></i>
+                                    <h5>Tidak ada data yang sesuai</h5>
+                                    <p>Coba ubah kriteria pencarian atau <a href="/laporan">reset filter</a></p>
+                                <% } else { %>
+                                    <i class="bi bi-inbox display-4 d-block mb-3 text-muted"></i>
+                                    <h5>Belum ada data</h5>
+                                    <p>Mulai dengan <a href="/laporan/tambah">menambah laporan</a> pertama Anda</p>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% } else { %>
+                        <% data.forEach(function(row, i){ %>
+                            <tr>
+                                <td><%= pagination.startRecord + i %></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        <%= JENIS_MAP[row.jenis_laporan] || 'Jenis tidak diset' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (row.tanggal_laporan) { %>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-calendar3"></i>
+                                            <%= row.tanggal_laporan %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">-</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong class="d-block mb-1"><%= row.judul %></strong>
+                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
+                                                data-bs-target="#viewModal<%= row.id %>" title="Lihat Uraian">
+                                            <i class="bi bi-eye"></i> Detail
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <% if (row.nama_pimpinan) { %>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person-badge"></i>
+                                            <%= row.nama_pimpinan %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">-</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (row.nama_jenis) { %>
+                                        <small class="text-muted">
+                                            <i class="bi bi-tag"></i>
+                                            <%= row.nama_jenis %>
+                                        </small>
+                                    <% } else { %>
+                                        <small class="text-muted">-</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (row.file_name) { %>
+                                        <div class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <% if (row.file_name.toLowerCase().endsWith('.pdf')) { %>
+                                                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                                <% } else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(row.file_name)) { %>
+                                                    <i class="bi bi-file-earmark-image text-success me-1"></i>
+                                                <% } else { %>
+                                                    <i class="bi bi-file-earmark text-primary me-1"></i>
+                                                <% } %>
+                                                <small class="text-truncate" style="max-width: 100px;" title="<%= row.file_name %>">
+                                                    <%= row.file_name %>
+                                                </small>
+                                            </div>
+                                            <small class="d-block text-muted mb-2">
+                                                <%= (row.file_size / 1024 / 1024).toFixed(2) %> MB
+                                            </small>
+                                            <a href="/laporan/download/<%= row.id %>"
+                                               class="btn btn-sm btn-success"
+                                               title="Download <%= row.file_name %>">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    <% } else { %>
+                                        <div class="text-center">
+                                            <small class="text-muted">
+                                                <i class="bi bi-dash-circle"></i>
+                                                Tidak ada file
+                                            </small>
+                                        </div>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/laporan/edit/<%= row.id %>" class="btn btn-sm btn-primary" title="Edit laporan">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="confirmDelete('<%= row.id %>', '<%= row.judul %>')" title="Hapus laporan">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Modal View Uraian - Rich HTML Support -->
+                            <div class="modal fade" id="viewModal<%= row.id %>" tabindex="-1">
+                                <div class="modal-dialog modal-xl">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <div>
+                                                <h5 class="modal-title mb-1">
+                                                    <i class="bi bi-file-text me-2"></i>Detail Uraian Laporan
+                                                </h5>
+                                                <small class="opacity-75">
+                                                    <i class="bi bi-calendar3 me-1"></i><%= row.tanggal_laporan || 'Tanggal tidak diset' %> |
+                                                    <i class="bi bi-tag me-1"></i><%= JENIS_MAP[row.jenis_laporan] || 'Jenis tidak diset' %>
+                                                    <% if (row.nama_pimpinan) { %> | <i class="bi bi-person-badge me-1"></i><%= row.nama_pimpinan %><% } %>
+                                                </small>
+                                            </div>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body p-0">
+                                            <div class="uraian-content">
+                                                <% if (row.isi_laporan && row.isi_laporan.trim() !== '') { %>
+                                                    <div class="content-wrapper">
+                                                        <h4 class="content-title"><%= row.judul %></h4>
+                                                        <div class="formatted-content">
+                                                            <%- row.isi_laporan %>
+                                                        </div>
+                                                    </div>
+                                                <% } else { %>
+                                                    <div class="empty-content text-center py-5">
+                                                        <i class="bi bi-file-text display-1 text-muted mb-3"></i>
+                                                        <h5 class="text-muted">Tidak Ada Uraian</h5>
+                                                        <p class="text-muted">Laporan ini belum memiliki uraian yang tersedia.</p>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer bg-light">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                <i class="bi bi-x-lg me-1"></i>Tutup
+                                            </button>
+                                                <a href="/laporan/edit/<%= row.id %>" class="btn btn-primary">
+                                                    <i class="bi bi-pencil-square me-1"></i>Edit Laporan
+                                                </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination (dengan filter support LENGKAP) -->
+        <% if (pagination && pagination.totalData > 0) { %>
+        <%
+        // Helper function untuk build complete query string
+        function buildQueryString(excludePage = false) {
+            var params = new URLSearchParams();
+            if (searchJudul) params.append('search_judul', searchJudul);
+            if (searchIsi) params.append('search_isi', searchIsi);
+            if (filterPimpinan) params.append('pimpinan', filterPimpinan);
+            if (filterJenis) params.append('jenis', filterJenis);
+            if (tanggalDari) params.append('tanggal_dari', tanggalDari);
+            if (tanggalSampai) params.append('tanggal_sampai', tanggalSampai);
+            if (pagination.limit && pagination.limit !== 5) params.append('limit', pagination.limit);
+            return params.toString() ? '?' + params.toString() : '';
+        }
+        %>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <% if (pagination.totalPages > 1) { %>
+                    <nav aria-label="Navigasi halaman laporan">
+                        <ul class="pagination justify-content-center mb-0">
+                            <!-- Previous Button -->
+                            <li class="page-item <%= !pagination.hasPrev ? 'disabled' : '' %>">
+                                <% if (pagination.hasPrev) { %>
+                                    <% 
+                                    var prevPage = pagination.currentPage - 1;
+                                    var queryString = buildQueryString();
+                                    var prevUrl = prevPage === 1 ? '/laporan' + queryString : '/laporan/page/' + prevPage + queryString;
+                                    %>
+                                    <a class="page-link" href="<%= prevUrl %>">
+                                        <i class="bi bi-chevron-left"></i> Sebelumnya
+                                    </a>
+                                <% } else { %>
+                                    <span class="page-link text-muted">
+                                        <i class="bi bi-chevron-left"></i> Sebelumnya
+                                    </span>
+                                <% } %>
+                            </li>
+
+                            <!-- Page Numbers -->
+                            <% 
+                            var startPage = Math.max(1, pagination.currentPage - 2);
+                            var endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+                            if (pagination.currentPage <= 3) {
+                                endPage = Math.min(pagination.totalPages, 5);
+                            }
+                            if (pagination.currentPage >= pagination.totalPages - 2) {
+                                startPage = Math.max(1, pagination.totalPages - 4);
+                            }
+                            %>
+
+                            <!-- First page -->
+                            <% if (startPage > 1) { %>
+                                <li class="page-item">
+                                    <% var queryString = buildQueryString(); %>
+                                    <a class="page-link" href="/laporan<%= queryString %>">1</a>
+                                </li>
+                                <% if (startPage > 2) { %>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                <% } %>
+                            <% } %>
+
+                            <!-- Page Numbers Loop -->
+                            <% for (var p = startPage; p <= endPage; p++) { %>
+                                <li class="page-item <%= pagination.currentPage === p ? 'active' : '' %>">
+                                    <% if (pagination.currentPage === p) { %>
+                                        <span class="page-link bg-primary text-white border-primary">
+                                            <%= p %>
+                                        </span>
+                                    <% } else { %>
+                                        <% 
+                                        var queryString = buildQueryString();
+                                        var pageUrl = p === 1 ? '/laporan' + queryString : '/laporan/page/' + p + queryString;
+                                        %>
+                                        <a class="page-link" href="<%= pageUrl %>">
+                                            <%= p %>
+                                        </a>
+                                    <% } %>
+                                </li>
+                            <% } %>
+
+                            <!-- Last page -->
+                            <% if (endPage < pagination.totalPages) { %>
+                                <% if (endPage < pagination.totalPages - 1) { %>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                <% } %>
+                                <li class="page-item">
+                                    <% var queryString = buildQueryString(); %>
+                                    <a class="page-link" href="/laporan/page/<%= pagination.totalPages %><%= queryString %>">
+                                        <%= pagination.totalPages %>
+                                    </a>
+                                </li>
+                            <% } %>
+
+                            <!-- Next Button -->
+                            <li class="page-item <%= !pagination.hasNext ? 'disabled' : '' %>">
+                                <% if (pagination.hasNext) { %>
+                                    <% 
+                                    var nextPage = pagination.currentPage + 1;
+                                    var queryString = buildQueryString();
+                                    var nextUrl = '/laporan/page/' + nextPage + queryString;
+                                    %>
+                                    <a class="page-link" href="<%= nextUrl %>">
+                                        Selanjutnya <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                <% } else { %>
+                                    <span class="page-link text-muted">
+                                        Selanjutnya <i class="bi bi-chevron-right"></i>
+                                    </span>
+                                <% } %>
+                            </li>
+                        </ul>
+                    </nav>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+    </div>
+
+    <!-- 🎯 MODAL FILTER -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form method="get" action="/laporan" id="filterForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="filterModalLabel">
+                            <i class="bi bi-funnel me-2"></i>Filter & Pencarian
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="search_judul" class="form-label">
+                                    <i class="bi bi-card-heading me-1"></i>Judul Laporan
+                                </label>
+                                <input type="text" class="form-control" id="search_judul" name="search_judul"
+                                       value="<%= searchJudul %>" placeholder="Cari berdasarkan judul...">
+                                <div class="form-text">Contoh: rapat, covid, kegiatan</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="search_isi" class="form-label">
+                                    <i class="bi bi-card-text me-1"></i>Isi Laporan
+                                </label>
+                                <input type="text" class="form-control" id="search_isi" name="search_isi"
+                                       value="<%= searchIsi %>" placeholder="Cari berdasarkan isi laporan...">
+                                <div class="form-text">Contoh: keuangan, kegiatan, anggaran</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="pimpinan" class="form-label">
+                                    <i class="bi bi-person-badge me-1"></i>Pimpinan
+                                </label>
+                                <select name="pimpinan" id="pimpinan" class="form-select">
+                                    <option value="">Semua Pimpinan</option>
+                                    <% pimpinanList.forEach(function(p) { %>
+                                        <option value="<%= p.id_pimpinan %>" <%=filterPimpinan===p.id_pimpinan ? 'selected' : '' %>>
+                                            <%= p.jabatan_pimpinan %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="jenis" class="form-label">
+                                    <i class="bi bi-tags me-1"></i>Jenis Laporan
+                                </label>
+                                <select name="jenis" id="jenis" class="form-select">
+                                    <option value="">Semua Jenis Laporan</option>
+                                    <% jenisList.forEach(function(j) { %>
+                                        <option value="<%= j.id_jenis %>" <%=filterJenis===j.id_jenis ? 'selected' : '' %>>
+                                            <%= JENIS_MAP[j.id_jenis] || j.nama_jenis %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tanggal_dari" class="form-label">
+                                    <i class="bi bi-calendar3 me-1"></i>Tanggal Awal
+                                </label>
+                                <input type="date" class="form-control" name="tanggal_dari" id="tanggalDari"
+                                       value="<%= tanggalDari %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tanggal_sampai" class="form-label">
+                                    <i class="bi bi-calendar3 me-1"></i>Tanggal Akhir
+                                </label>
+                                <input type="date" class="form-control" name="tanggal_sampai" id="tanggalSampai"
+                                       value="<%= tanggalSampai %>">
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <small>Pencarian berdasarkan judul dan isi akan menampilkan data yang <strong>judulnya ATAU isi laporannya</strong>
+                                mengandung kata yang dicari (tidak harus sama persis).</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="forceResetFilter()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="filterSubmitBtn">
+                            <i class="bi bi-search me-1"></i>Cari
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Delete -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Hapus
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="bi bi-trash3 display-1 text-danger mb-3"></i>
+                        <h5>Apakah Anda yakin?</h5>
+                        <p class="mb-0">Data yang telah dihapus tidak dapat dikembalikan!</p>
+                        <div class="alert alert-warning mt-3">
+                            <strong>Laporan:</strong> <span id="deleteItemTitle"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Batal
+                    </button>
+                    <a href="#" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-1"></i>Ya, Hapus!
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast untuk Notifikasi -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle me-2"></i>
+                <strong class="me-auto">Berhasil</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successToastBody">
+                Data berhasil diproses!
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+                Terjadi kesalahan!
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('limitSelect').addEventListener('change', function () {
+            const selectedLimit = parseInt(this.value);
+            
+            // Ambil parameter dari template EJS (lebih reliable daripada parsing URL)
+            const params = new URLSearchParams();
+            
+            // Parameter filter dari template
+            const searchJudul = '<%= searchJudul %>';
+            const searchIsi = '<%= searchIsi %>';
+            const filterPimpinan = '<%= filterPimpinan %>';
+            const filterJenis = '<%= filterJenis %>';
+            const tanggalDari = '<%= tanggalDari %>';
+            const tanggalSampai = '<%= tanggalSampai %>';
+            
+            // Tambahkan parameter yang ada (hanya jika tidak kosong)
+            if (searchJudul && searchJudul !== '') params.append('search_judul', searchJudul);
+            if (searchIsi && searchIsi !== '') params.append('search_isi', searchIsi);
+            if (filterPimpinan && filterPimpinan !== '') params.append('pimpinan', filterPimpinan);
+            if (filterJenis && filterJenis !== '') params.append('jenis', filterJenis);
+            if (tanggalDari && tanggalDari !== '') params.append('tanggal_dari', tanggalDari);
+            if (tanggalSampai && tanggalSampai !== '') params.append('tanggal_sampai', tanggalSampai);
+            
+            // Tambahkan limit baru
+            params.append('limit', selectedLimit);
+            
+            // Hitung halaman target berdasarkan record saat ini
+            const currentStartRecord = parseInt('<%= pagination.startRecord %>') || 1;
+            const targetPage = Math.ceil(currentStartRecord / selectedLimit);
+            
+            // Buat URL target
+            let targetUrl = '/laporan';
+            if (targetPage > 1) {
+                targetUrl += `/page/${targetPage}`;
+            }
+            
+            // Tambahkan query string jika ada parameter
+            const queryString = params.toString();
+            if (queryString) {
+                targetUrl += '?' + queryString;
+            }
+            
+            // Show loading dan navigate
+            showTableLoading();
+            window.location.href = targetUrl;
+        });
+
+        // 🎯 Enhanced Loading States
+        function showTableLoading() {
+            const tableLoading = document.getElementById('tableLoading');
+            const mainTable = document.getElementById('mainTable');
+            if (tableLoading && mainTable) {
+                tableLoading.style.display = 'block';
+                tableLoading.style.height = mainTable.offsetHeight + 'px';
+                mainTable.style.opacity = '0.5';
+            }
+        }
+
+        function hideTableLoading() {
+            const tableLoading = document.getElementById('tableLoading');
+            const mainTable = document.getElementById('mainTable');
+            if (tableLoading && mainTable) {
+                tableLoading.style.display = 'none';
+                mainTable.style.opacity = '1';
+            }
+        }
+
+        // File loading untuk modal
+        function hideLoading(fileId) {
+            const loading = document.getElementById('fileLoading' + fileId);
+            const content = document.getElementById('fileContent' + fileId);
+            if (loading && content) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            }
+        }
+
+        // 🗑️ Enhanced Delete Confirmation
+        function confirmDelete(id, title) {
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const titleSpan = document.getElementById('deleteItemTitle');
+            
+            titleSpan.textContent = title;
+            confirmBtn.href = '/laporan/hapus/' + id;
+            
+            modal.show();
+        }
+
+        // 📄 Enhanced Form Handling
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('filterSubmitBtn');
+            
+            // Disable button dan ubah text
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mencari...';
+            
+            // Show loading
+            showTableLoading();
+        });
+
+        // 🎯 SOLUSI TERBAIK: Alert Management yang Proper
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert-success, .alert-info');
+            
+            alerts.forEach(function(alert) {
+                let timeoutId;
+                let isHovered = false;
+                
+                // Identifikasi jenis alert
+                const isFilterAlert = alert.querySelector('a[href="/laporan"]') !== null;
+                
+                // Tambahkan close button untuk semua alert
+                if (!alert.querySelector('.alert-close-btn')) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.type = 'button';
+                    closeBtn.className = 'btn-close alert-close-btn';
+                    closeBtn.style.cssText = `
+                        position: absolute;
+                        top: 0.5rem;
+                        right: 0.5rem;
+                        z-index: 10;
+                        background: rgba(255,255,255,0.8);
+                        border: none;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        padding: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                    `;
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.setAttribute('aria-label', 'Close');
+                    
+                    alert.style.position = 'relative';
+                    alert.appendChild(closeBtn);
+                    
+                    closeBtn.addEventListener('click', function() {
+                        hideAlert(alert);
+                    });
+                }
+                
+                // Fungsi untuk hide alert dengan proper cleanup
+                function hideAlert(alertElement) {
+                    // 🎯 PENTING: Disable semua interaksi SEBELUM animasi
+                    alertElement.style.pointerEvents = 'none';
+                    alertElement.style.userSelect = 'none';
+                    
+                    // Disable semua link dan button di dalam alert
+                    const interactiveElements = alertElement.querySelectorAll('a, button, input, select');
+                    interactiveElements.forEach(el => {
+                        el.style.pointerEvents = 'none';
+                        el.setAttribute('tabindex', '-1');
+                    });
+                    
+                    // Animasi fade out
+                    alertElement.style.transition = 'all 0.5s ease-out';
+                    alertElement.style.opacity = '0';
+                    alertElement.style.transform = 'translateY(-10px) scale(0.98)';
+                    
+                    // Remove dari DOM setelah animasi selesai
+                    setTimeout(function() {
+                        if (alertElement && alertElement.parentNode) {
+                            alertElement.parentNode.removeChild(alertElement);
+                        }
+                    }, 500);
+                }
+                
+                // Hover pause functionality
+                alert.addEventListener('mouseenter', function() {
+                    isHovered = true;
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                });
+                
+                alert.addEventListener('mouseleave', function() {
+                    isHovered = false;
+                    if (!isFilterAlert) { // Hanya auto-hide untuk non-filter alerts
+                        timeoutId = setTimeout(() => hideAlert(alert), 2000);
+                    }
+                });
+                
+                // Setup auto-hide berdasarkan jenis alert
+                if (isFilterAlert) {
+                    // Filter alerts: Persistent sampai user close manual
+                    // Tambahkan visual indicator
+                    const persistentIcon = document.createElement('small');
+                    persistentIcon.className = 'text-muted ms-2';
+                    persistentIcon.innerHTML = '<i class="bi bi-pin-angle" title="Klik X untuk menutup"></i>';
+                    
+                    const alertContent = alert.querySelector('span');
+                    if (alertContent) {
+                        alertContent.appendChild(persistentIcon);
+                    }
+                    
+                } else {
+                    // Regular alerts: Auto-hide setelah 6 detik
+                    timeoutId = setTimeout(() => {
+                        if (!isHovered) {
+                            hideAlert(alert);
+                        }
+                    }, 6000);
+                    
+                    // Tambahkan progress bar
+                    const progressBar = document.createElement('div');
+                    progressBar.style.cssText = `
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        height: 3px;
+                        background: rgba(0,0,0,0.2);
+                        width: 100%;
+                        transform-origin: left;
+                        animation: alertProgress 6s linear forwards;
+                        pointer-events: none;
+                    `;
+                    alert.appendChild(progressBar);
+                }
+            });
+        });
+
+        // 🎯 Toast Notifications
+        function showToast(type, message) {
+            const toastId = type + 'Toast';
+            const toastBodyId = type + 'ToastBody';
+            const toast = document.getElementById(toastId);
+            const toastBody = document.getElementById(toastBodyId);
+            
+            if (toast && toastBody) {
+                toastBody.textContent = message;
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
+            }
+        }
+
+        // 🔗 Enhanced Pagination dengan Loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const paginationLinks = document.querySelectorAll('.pagination .page-link:not(.disabled)');
+            paginationLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    if (!this.parentNode.classList.contains('active')) {
+                        showTableLoading();
+                    }
+                });
+            });
+        });
+
+        // 👁️ Enhanced Modal Loading untuk File Preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileModals = document.querySelectorAll('[id^="viralitasFileModal"]');
+            fileModals.forEach(function(modal) {
+                modal.addEventListener('show.bs.modal', function() {
+                    const modalId = this.id.replace('viralitasFileModal', '');
+                    const loading = document.getElementById('fileLoading' + modalId);
+                    const content = document.getElementById('fileContent' + modalId);
+                    
+                    if (loading && content) {
+                        loading.style.display = 'flex';
+                        content.style.display = 'none';
+                        
+                        // Auto hide loading after 3 seconds if hideLoading not called
+                        setTimeout(function() {
+                            hideLoading(modalId);
+                        }, 3000);
+                    }
+                });
+            });
+        });
+
+        // 📱 Responsive Table Enhancement
+        function makeTableResponsive() {
+            const tables = document.querySelectorAll('.table-responsive table');
+            tables.forEach(function(table) {
+                if (window.innerWidth < 768) {
+                    table.classList.add('table-sm');
+                } else {
+                    table.classList.remove('table-sm');
+                }
+            });
+        }
+
+        // Call on load and resize
+        window.addEventListener('load', makeTableResponsive);
+        window.addEventListener('resize', makeTableResponsive);
+
+        // 💾 Local Storage untuk Remember Filter (Optional)
+        function saveFilterState() {
+            const filterData = {
+                search_judul: document.getElementById('search_judul').value,
+                search_isi: document.getElementById('search_isi').value,
+                pimpinan: document.getElementById('pimpinan').value,
+                jenis: document.getElementById('jenis').value,
+                tanggal_dari: document.getElementById('tanggalDari').value,
+                tanggal_sampai: document.getElementById('tanggalSampai').value
+            };
+            
+            sessionStorage.setItem('laporanFilter', JSON.stringify(filterData));
+        }
+
+        function loadFilterState() {
+            const saved = sessionStorage.getItem('laporanFilter');
+            if (saved) {
+                const filterData = JSON.parse(saved);
+                Object.keys(filterData).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element && filterData[key]) {
+                        element.value = filterData[key];
+                    }
+                });
+            }
+        }
+
+        function forceResetFilter() {
+            
+            // 1. Reset form secara paksa
+            const form = document.getElementById('filterForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // 2. Reset manual setiap field
+            const fieldIds = ['search_judul', 'search_isi', 'pimpinan', 'jenis', 'tanggalDari', 'tanggalSampai'];
+            fieldIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = '';
+                    el.selectedIndex = 0; // untuk select
+                }
+            });
+            
+            // 3. Clear ALL possible storage
+            sessionStorage.clear();
+            localStorage.removeItem('laporanFilter');
+            sessionStorage.removeItem('laporanFilter');
+            
+            // 4. Langsung redirect tanpa delay
+            window.location.href = '/laporan';
+        }
+    </script>
+
+    <!-- Custom CSS untuk Rich Text Content dan Optimasi -->
+    <style>
+        /* Loading States */
+        .table-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .table-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+        }
+
+        /* Enhanced Buttons */
+        .btn-group .btn {
+            transition: all 0.2s ease;
+        }
+
+        .btn-group .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Enhanced File Icons */
+        .file-icon {
+            font-size: 1.2em;
+            margin-right: 0.25rem;
+        }
+
+        /* Search Highlight */
+        .search-highlight {
+            background-color: #fff3cd;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Toast Enhancements */
+        .toast {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal Enhancements */
+        .modal-xl {
+            max-width: 1200px;
+        }
+        
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        
+        /* Content Styling */
+        .uraian-content {
+            padding: 2rem;
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #ffffff;
+        }
+        
+        .content-title {
+            color: #2c3e50;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        
+        /* Rich Text Formatting */
+        .formatted-content {
+            line-height: 1.8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            font-size: 1rem;
+            color: #212529;
+        }
+        
+        /* Headings */
+        .formatted-content h1,
+        .formatted-content h2,
+        .formatted-content h3,
+        .formatted-content h4,
+        .formatted-content h5,
+        .formatted-content h6 {
+            color: #2c3e50;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .formatted-content h1 { font-size: 2rem; color: #1a202c; }
+        .formatted-content h2 { font-size: 1.75rem; color: #2d3748; }
+        .formatted-content h3 { font-size: 1.5rem; color: #4a5568; }
+        .formatted-content h4 { font-size: 1.25rem; color: #4a5568; }
+        .formatted-content h5 { font-size: 1.125rem; color: #4a5568; }
+        .formatted-content h6 { font-size: 1rem; color: #4a5568; }
+        
+        /* Paragraphs */
+        .formatted-content p {
+            margin-bottom: 1.25rem;
+            text-align: justify;
+            color: #374151;
+        }
+        
+        /* Text Formatting */
+        .formatted-content strong,
+        .formatted-content b {
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .formatted-content em,
+        .formatted-content i {
+            font-style: italic;
+            color: #4b5563;
+        }
+        
+        .formatted-content u {
+            text-decoration: underline;
+            text-decoration-color: #6b7280;
+        }
+        
+        /* Links */
+        .formatted-content a {
+            color: #2563eb;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+        
+        .formatted-content a:hover {
+            color: #1d4ed8;
+            background-color: rgba(37, 99, 235, 0.1);
+            border-bottom-color: #1d4ed8;
+            text-decoration: none;
+        }
+        
+        /* Lists */
+        .formatted-content ul,
+        .formatted-content ol {
+            margin-bottom: 1.5rem;
+            padding-left: 2rem;
+        }
+        
+        .formatted-content li {
+            margin-bottom: 0.75rem;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .formatted-content ul {
+            list-style-type: disc;
+        }
+        
+        .formatted-content ol {
+            list-style-type: decimal;
+        }
+        
+        /* Nested lists */
+        .formatted-content ul ul,
+        .formatted-content ol ol,
+        .formatted-content ul ol,
+        .formatted-content ol ul {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Blockquotes */
+        .formatted-content blockquote {
+            border-left: 4px solid #3b82f6;
+            margin: 1.5rem 0;
+            padding: 1rem 1.5rem;
+            background-color: #f8fafc;
+            font-style: italic;
+            color: #475569;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .formatted-content blockquote p {
+            margin-bottom: 0;
+        }
+        
+        /* Tables */
+        .formatted-content table {
+            width: 100%;
+            margin-bottom: 1.5rem;
+            border-collapse: collapse;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .formatted-content th,
+        .formatted-content td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .formatted-content th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .formatted-content tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        
+        .formatted-content tr:hover {
+            background-color: #f3f4f6;
+        }
+        
+        /* Code */
+        .formatted-content code {
+            background-color: #f1f5f9;
+            color: #dc2626;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        
+        .formatted-content pre {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .formatted-content pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        
+        /* Images */
+        .formatted-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Horizontal Rules */
+        .formatted-content hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #d1d5db, transparent);
+            margin: 2rem 0;
+        }
+        
+        /* Custom scroll bar untuk content */
+        .uraian-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .uraian-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .uraian-content::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .uraian-content::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Empty content styling */
+        .empty-content {
+            color: #6b7280;
+        }
+        
+        .empty-content .display-1 {
+            font-size: 4rem;
+            opacity: 0.3;
+        }
+
+        /* Responsive Enhancements */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            .table-responsive table {
+                font-size: 0.9rem;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                margin-bottom: 0.25rem;
+            }
+            
+            .modal-lg,
+            .modal-xl {
+                max-width: 95%;
+            }
+            
+            .uraian-content {
+                padding: 1rem;
+            }
+        }
+
+        /* Performance Optimizations */
+        .table {
+            table-layout: fixed;
+        }
+        
+        .table td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Accessibility Improvements */
+        .btn:focus,
+        .form-control:focus,
+        .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            outline: none;
+        }
+        
+        /* Loading Animation */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Enhanced Pagination */
+        .pagination .page-link {
+            transition: all 0.2s ease;
+        }
+        
+        .pagination .page-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Badge Enhancements */
+        .badge {
+            font-weight: 500;
+        }
+        
+        /* Enhanced Empty State */
+        .table tbody tr td {
+            vertical-align: middle;
+        }
+        
+        /* Custom Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced Alert Styling */
+        .alert {
+            position: relative !important;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .alert-close-btn:hover {
+            background: rgba(255,255,255,1) !important;
+            transform: scale(1.1);
+        }
+
+        /* Progress bar animation */
+        @keyframes alertProgress {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
+
+        .alert:hover .alert-progress {
+            animation-play-state: paused !important;
+        }
+
+        /* Disable state */
+        .alert[style*="pointer-events: none"] {
+            cursor: default !important;
+        }
+
+        .alert[style*="pointer-events: none"] * {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+    </style>
+</body>

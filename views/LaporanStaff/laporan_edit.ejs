@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- CKEditor 5 CDN -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+</head>
+
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><%= title %></h3>
+            <a href="/laporan" class="btn btn-secondary">Kembali</a>
+        </div>
+
+        <form method="post" action="/laporan/edit/<%= detail.id %>" enctype="multipart/form-data" class="card p-4 shadow-sm">
+            <div class="row g-3">
+
+                <!-- Jenis Laporan -->
+                <div class="col-md-4">
+                    <label for="jenisLaporan" class="form-label">Jenis Laporan</label>
+                    <select id="jenisLaporan" name="jenis_laporan" class="form-select" required>
+                        <% Object.entries(JENIS_MAP).forEach(([kode, nama]) => { %>
+                            <option value="<%= kode %>" <%= Number(detail.jenis_laporan) === Number(kode) ? 'selected' : '' %>><%= nama %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <!-- Pimpinan -->
+                <div class="col-md-4">
+                    <label for="pimpinan" class="form-label">Pimpinan</label>
+                    <select id="pimpinan" name="id_pimpinan" class="form-select" required>
+                        <% pimpinan.forEach(p => { %>
+                            <option value="<%= p.id_pimpinan %>" <%= Number(detail.id_pimpinan) === Number(p.id_pimpinan) ? 'selected' : '' %>><%= p.jabatan_pimpinan %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <!-- Jenis Media -->
+                <div class="col-md-4">
+                    <label for="jenisMedia" class="form-label">Jenis Media</label>
+                    <select id="jenisMedia" name="id_jenis" class="form-select" required>
+                        <% jenis.forEach(j => { %>
+                            <option value="<%= j.id_jenis %>" <%= Number(detail.id_jenis) === Number(j.id_jenis) ? 'selected' : '' %>><%= j.nama_jenis %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <!-- Tanggal -->
+                <div class="col-md-4">
+                    <label for="tanggalLaporan" class="form-label">Tanggal</label>
+                    <input id="tanggalLaporan" type="date" name="tanggal_laporan" class="form-control" value="<%= detail.tanggal_laporan_str %>" required>
+                </div>
+
+                <!-- Judul -->
+                <div class="col-md-8">
+                    <label for="judul" class="form-label">Judul</label>
+                    <input id="judul" type="text" name="judul" class="form-control" value="<%= detail.judul %>" required>
+                </div>
+
+                <!-- Isi Laporan dengan CKEditor -->
+                <div class="col-12">
+                    <label for="isiLaporan" class="form-label">Uraian / Isi Laporan</label>
+                    <textarea id="isiLaporan" name="isi_laporan" class="form-control"><%= detail.isi_laporan || '' %></textarea>
+
+                    <!-- Tombol Copy -->
+                    <button type="button" id="btnCopy" class="btn btn-outline-primary mt-2">
+                        <i class="bi bi-clipboard"></i> Salin Uraian
+                    </button>
+                    <div id="copyAlert" class="alert alert-success mt-2 d-none" role="alert">
+                        <i class="bi bi-check-circle"></i> Uraian berhasil disalin ke clipboard!
+                    </div>
+                </div>
+
+                <!-- Lampiran -->
+                <div class="col-12">
+                    <label for="fileUpload" class="form-label">File Lampiran</label>
+                    <% if (detail.file_name) { %>
+                        <div class="alert alert-info">
+                            <strong><%= detail.file_name %></strong><br>
+                            Ukuran: <%= (detail.file_size / 1024 / 1024).toFixed(2) %> MB<br>
+                            <a href="/laporan/download/<%= detail.id %>" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-download"></i> Download File
+                            </a>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-secondary">Tidak ada file yang diunggah.</div>
+                    <% } %>
+                    <input id="fileUpload" type="file" name="file_upload" class="form-control">
+                    <small class="form-text text-muted">
+                        Upload file baru akan mengganti file sebelumnya.
+                    </small>
+                </div>
+
+                <!-- Submit -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- CKEditor Initialization -->
+    <script>
+        let editorInstance;
+
+        ClassicEditor
+            .create(document.querySelector('#isiLaporan'), {
+                toolbar: {
+                    items: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'link', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'blockQuote', 'insertTable', '|',
+                        'undo', 'redo'
+                    ]
+                },
+                heading: {
+                    options: [
+                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
+                    ]
+                },
+                table: {
+                    contentToolbar: [
+                        'tableColumn', 'tableRow', 'mergeTableCells'
+                    ]
+                },
+                link: {
+                    decorators: {
+                        openInNewTab: {
+                            mode: 'manual',
+                            label: 'Open in a new tab',
+                            attributes: {
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }
+                        }
+                    }
+                }
+            })
+            .then(editor => {
+                editorInstance = editor;
+                
+                // Menyesuaikan tinggi editor
+                editor.editing.view.change(writer => {
+                    writer.setStyle('min-height', '200px', editor.editing.view.document.getRoot());
+                });
+            })
+            .catch(error => {
+                console.error('Error menginisialisasi CKEditor:', error);
+            });
+    </script>
+
+    <!-- Copy Button Script -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const btnCopy = document.getElementById("btnCopy");
+            const alertBox = document.getElementById("copyAlert");
+
+            btnCopy.addEventListener("click", () => {
+                let textToCopy = '';
+                
+                // Ambil text dari CKEditor jika sudah diinisialisasi
+                if (editorInstance) {
+                    // Ambil plain text dari CKEditor (tanpa HTML tags)
+                    const viewDocument = editorInstance.editing.view.document;
+                    const root = viewDocument.getRoot();
+                    textToCopy = editorInstance.data.get();
+                    
+                    // Konversi HTML ke plain text untuk copy
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = textToCopy;
+                    textToCopy = tempDiv.textContent || tempDiv.innerText || '';
+                } else {
+                    // Fallback jika CKEditor belum ready
+                    const textarea = document.getElementById("isiLaporan");
+                    textToCopy = textarea.value;
+                }
+
+                // Copy ke clipboard
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showCopySuccess();
+                    }).catch(() => {
+                        fallbackCopy(textToCopy);
+                    });
+                } else {
+                    fallbackCopy(textToCopy);
+                }
+
+                function fallbackCopy(text) {
+                    // Buat textarea temporary untuk fallback copy
+                    const tempTextarea = document.createElement('textarea');
+                    tempTextarea.value = text;
+                    document.body.appendChild(tempTextarea);
+                    tempTextarea.select();
+                    
+                    try {
+                        const success = document.execCommand("copy");
+                        if (success) {
+                            showCopySuccess();
+                        } else {
+                            alert("Gagal menyalin teks.");
+                        }
+                    } catch (e) {
+                        alert("Gagal menyalin teks.");
+                    }
+                    
+                    document.body.removeChild(tempTextarea);
+                }
+
+                function showCopySuccess() {
+                    alertBox.classList.remove("d-none");
+                    setTimeout(() => alertBox.classList.add("d-none"), 3000);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

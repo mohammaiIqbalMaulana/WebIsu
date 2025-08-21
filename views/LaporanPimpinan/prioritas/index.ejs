@@ -1,0 +1,1007 @@
+<div class="container mt-4">
+    <h3 class="mb-4">Daftar Isu Prioritas</h3>
+
+    <div class="d-flex gap-2 mb-3">
+        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#filterModal">
+            <i class="bi bi-funnel"></i> Filter
+            <% if (hasFilter) { %><span class="badge bg-danger ms-1">!</span><% } %>
+        </button>
+        <a href="/isu-prioritas/create" class="btn btn-warning">
+            <i class="bi bi-plus-circle"></i> Tambah Isu Prioritas
+        </a>
+    </div>
+
+<% if (hasFilter) { %>
+    <div class="alert alert-info d-flex justify-content-between align-items-center pe-3">
+        <div>
+            <i class="bi bi-funnel-fill me-2"></i>
+            <strong>Filter Aktif:</strong> Ditemukan <strong><%= pagination.totalData %></strong> data
+            <div class="mt-1">
+                <% if (tanggalDari || tanggalSampai) { %>
+                    <span class="badge bg-success me-1">📅 Tanggal</span>
+                <% } %>
+                <% if (judulSearch) { %>
+                    <span class="badge bg-primary me-1">📝 Judul: "<%= judulSearch %>"</span>
+                <% } %>
+                <% if (uraianSearch) { %>
+                    <span class="badge bg-info me-1">📄 Uraian: "<%= uraianSearch %>"</span>
+                <% } %>
+                <% if (kewenanganFilter) { %>
+                    <span class="badge bg-warning me-1">🏢 Kewenangan</span>
+                <% } %>
+                <% if (stakeholderFilter) { %>
+                    <span class="badge bg-secondary me-1">👥 Stakeholder</span>
+                <% } %>
+            </div>
+        </div>
+        <a href="/isu-prioritas" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle"></i> Reset Filter
+        </a>
+    </div>
+<% } %>
+
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="limitSelect" class="form-label">Data Per Halaman</label>
+                <select class="form-select" id="limitSelect" name="limit">
+                    <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
+                    <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                    <option value="20" <%= pagination.limit == 20 ? 'selected' : '' %>>20</option>
+                    <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                    <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <% if (pagination && pagination.totalData > 0) { %>
+            <div class="text-end">
+                <small class="text-muted">
+                    Menampilkan <strong><%= pagination.startRecord %></strong> sampai
+                    <strong><%= pagination.endRecord %></strong> dari
+                    <strong><%= pagination.totalData %></strong> data
+                    <% if (hasFilter) { %>(dengan filter)<% } %>
+                </small>
+            </div>
+            <% } %>
+        </div>
+    </div>
+
+    <div id="tableLoading" class="position-relative" style="display: none;">
+        <div class="position-absolute w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 10;">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Memuat data...</p>
+            </div>
+        </div>
+    </div>
+    
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-striped align-middle" id="mainTable">
+        <thead class="table-dark">
+            <tr>
+                <th>No</th>
+                <th width="25%">Judul</th>
+                <th>Tanggal</th>
+                <th width="15%">Kewenangan</th>
+                <th width="15%">Stakeholder</th>
+                <th>Links</th>
+                <th width="15%">Files</th>
+                <th width="10%">Detail</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+<tbody>
+    <% if (data && data.length > 0) { %>
+        <% data.forEach((item, index) => { %>
+            <tr>
+                <td><%= pagination.startRecord + index %></td>
+                <td>
+                    <strong class="d-block mb-1"><%= item.judul %></strong>
+                </td>
+                <td>
+                    <small class="text-muted">
+                        <i class="bi bi-calendar3"></i>
+                        <%= new Date(item.tanggal_laporan).toLocaleDateString('id-ID') %>
+                    </small>
+                </td>
+                <td>
+                    <!-- FIXED: Proper kewenangan display -->
+                    <% if (item.kewenanganNames && item.kewenanganNames.length > 0) { %>
+                        <div class="d-flex flex-wrap gap-1">
+                            <% item.kewenanganNames.forEach(name => { %>
+                                <span class="badge bg-primary text-wrap" style="font-size: 0.7rem;">
+                                    <i class="bi bi-building-gear me-1"></i><%= name %>
+                                </span>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <small class="text-muted">
+                            <i class="bi bi-dash"></i> Tidak ada
+                        </small>
+                    <% } %>
+                </td>
+                <td>
+                    <!-- Proper stakeholder display -->
+                    <% if (item.stakeholderNames && item.stakeholderNames.length > 0) { %>
+                        <div class="d-flex flex-wrap gap-1">
+                            <% item.stakeholderNames.forEach(name => { %>
+                                <span class="badge bg-success text-wrap" style="font-size: 0.7rem;">
+                                    <i class="bi bi-people me-1"></i><%= name %>
+                                </span>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <small class="text-muted">
+                            <i class="bi bi-dash"></i> Tidak ada
+                        </small>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (item.links && item.links.length > 0) { %>
+                        <div class="d-flex flex-column gap-1">
+                            <% item.links.forEach((link, linkIndex) => { %>
+                                <% 
+                                // Extract domain for display
+                                let displayText = '';
+                                try {
+                                    const url = new URL(link);
+                                    displayText = url.hostname.replace('www.', '');
+                                    // Truncate if too long
+                                    if (displayText.length > 20) {
+                                        displayText = displayText.substring(0, 17) + '...';
+                                    }
+                                } catch {
+                                    displayText = link.length > 20 ? link.substring(0, 17) + '...' : link;
+                                }
+                                %>
+                                <a href="<%= link %>" target="_blank" 
+                                   class="btn btn-outline-info btn-sm d-flex align-items-center" 
+                                   style="font-size: 0.75rem; max-width: 100%; text-align: left;"
+                                   title="<%= link %>">
+                                    <i class="bi bi-link-45deg me-1 flex-shrink-0"></i>
+                                    <span class="text-truncate"><%= displayText %></span>
+                                    <i class="bi bi-box-arrow-up-right ms-1 flex-shrink-0" style="font-size: 0.6rem;"></i>
+                                </a>
+                            <% }) %>
+                        </div>
+                    <% } else { %>
+                        <small class="text-muted">
+                            <i class="bi bi-dash"></i> Tidak ada
+                        </small>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (item.files && item.files.length > 0) { %>
+                        <div class="d-flex flex-wrap gap-1">
+                            <% if (item.files.length === 1) { %>
+                                <!-- Single file -->
+                                <a href="/isu-prioritas/download/<%= item.id %>/0" 
+                                   class="btn btn-success btn-sm" title="<%= item.files[0].name %>">
+                                    <i class="bi bi-download"></i>
+                                    <%= item.files[0].name.length > 15 ? item.files[0].name.substring(0, 15) + '...' : item.files[0].name %>
+                                </a>
+                            <% } else { %>
+                                <!-- Multiple files -->
+                                <button class="btn btn-info btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#filesModal<%= item.id %>"
+                                        title="Lihat semua file">
+                                    <i class="bi bi-files"></i>
+                                    <%= item.files.length %> File<%= item.files.length > 1 ? 's' : '' %>
+                                </button>
+                                <a href="/isu-prioritas/download-all/<%= item.id %>" 
+                                   class="btn btn-success btn-sm" title="Download semua file sebagai ZIP">
+                                    <i class="bi bi-download"></i> ZIP
+                                </a>
+                            <% } %>
+                        </div>
+                    <% } else { %>
+                        <small class="text-muted">
+                            <i class="bi bi-file-x"></i> No files
+                        </small>
+                    <% } %>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
+                            data-bs-target="#viewModal<%= item.id %>" title="Lihat Detail">
+                        <i class="bi bi-eye"></i> Detail
+                    </button>
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a href="/isu-prioritas/edit/<%= item.id %>" class="btn btn-warning btn-sm" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/isu-prioritas/delete/<%= item.id %>"
+                           onclick="return confirm('Yakin ingin menghapus?')"
+                           class="btn btn-danger btn-sm" title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        <% }) %>
+    <% } else { %>
+        <tr>
+            <td colspan="9" class="text-center">Belum ada data</td>
+        </tr>
+    <% } %>
+</tbody>
+    </table>
+</div>
+
+    <!-- FIXED: Pagination -->
+    <% if (pagination && pagination.totalData > 0 && pagination.totalPages > 1) { %>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <nav aria-label="Navigasi halaman isu prioritas">
+                <ul class="pagination justify-content-center mb-0">
+                    <!-- Previous Button -->
+                    <li class="page-item <%= !pagination.hasPrev ? 'disabled' : '' %>">
+                        <% if (pagination.hasPrev && pagination.prevUrl) { %>
+                            <a class="page-link" href="<%= pagination.prevUrl %>">
+                                <i class="bi bi-chevron-left"></i> Sebelumnya
+                            </a>
+                        <% } else { %>
+                            <span class="page-link text-muted">
+                                <i class="bi bi-chevron-left"></i> Sebelumnya
+                            </span>
+                        <% } %>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    <% 
+                    const startPage = Math.max(1, pagination.currentPage - 2);
+                    const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+                    %>
+                    
+                    <% if (startPage > 1) { %>
+                        <li class="page-item">
+                            <a class="page-link" href="<%= pagination.firstUrl %>">1</a>
+                        </li>
+                        <% if (startPage > 2) { %>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <% } %>
+                    <% } %>
+
+                    <% for (let i = startPage; i <= endPage; i++) { %>
+                        <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+                            <% if (i === pagination.currentPage) { %>
+                                <span class="page-link"><%= i %></span>
+                            <% } else { %>
+                                <% 
+                                const pageUrl = i === 1 ? pagination.firstUrl : 
+                                    `/isu-prioritas?page=${i}&${new URLSearchParams({
+                                        ...(tanggalDari ? { tanggal_dari: tanggalDari } : {}),
+                                        ...(tanggalSampai ? { tanggal_sampai: tanggalSampai } : {}),
+                                        ...(judulSearch ? { judul: judulSearch } : {}),
+                                        ...(uraianSearch ? { uraian: uraianSearch } : {}),
+                                        ...(kewenanganFilter ? { kewenangan: kewenanganFilter } : {}),
+                                        ...(stakeholderFilter ? { stakeholder: stakeholderFilter } : {}),
+                                        ...(pagination.limit !== 10 ? { limit: pagination.limit } : {})
+                                    }).toString()}`;
+                                %>
+                                <a class="page-link" href="<%= pageUrl.replace('&', '?').replace(/\?&/g, '?') %>"><%= i %></a>
+                            <% } %>
+                        </li>
+                    <% } %>
+
+                    <% if (endPage < pagination.totalPages) { %>
+                        <% if (endPage < pagination.totalPages - 1) { %>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        <% } %>
+                        <li class="page-item">
+                            <a class="page-link" href="<%= pagination.lastUrl %>"><%= pagination.totalPages %></a>
+                        </li>
+                    <% } %>
+
+                    <!-- Next Button -->
+                    <li class="page-item <%= !pagination.hasNext ? 'disabled' : '' %>">
+                        <% if (pagination.hasNext && pagination.nextUrl) { %>
+                            <a class="page-link" href="<%= pagination.nextUrl %>">
+                                Selanjutnya <i class="bi bi-chevron-right"></i>
+                            </a>
+                        <% } else { %>
+                            <span class="page-link text-muted">
+                                Selanjutnya <i class="bi bi-chevron-right"></i>
+                            </span>
+                        <% } %>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <% } %>
+
+</div>
+
+<!-- Enhanced Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="get" action="/isu-prioritas" id="filterForm">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="filterModalLabel">
+                        <i class="bi bi-funnel-fill me-2"></i>Filter & Pencarian Data
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Filter berdasarkan Text -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-search me-1"></i>Pencarian Berdasarkan Teks
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="judulSearch" class="form-label">
+                                <i class="bi bi-card-heading me-1"></i>Cari di Judul
+                            </label>
+                            <input type="text" class="form-control" name="judul" id="judulSearch"
+                                   value="<%= judulSearch || '' %>" 
+                                   placeholder="Ketik kata kunci judul...">
+                            <small class="form-text text-muted">Pencarian tidak case-sensitive</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="uraianSearch" class="form-label">
+                                <i class="bi bi-file-text me-1"></i>Cari di Isi Laporan
+                            </label>
+                            <input type="text" class="form-control" name="uraian" id="uraianSearch"
+                                   value="<%= uraianSearch || '' %>" 
+                                   placeholder="Ketik kata kunci isi laporan...">
+                            <small class="form-text text-muted">Pencarian di dalam konten laporan</small>
+                        </div>
+                    </div>
+
+                    <!-- Filter berdasarkan Tanggal -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-success border-bottom pb-2 mb-3">
+                                <i class="bi bi-calendar-range me-1"></i>Filter Berdasarkan Tanggal
+                            </h6>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tanggalDari" class="form-label">
+                                <i class="bi bi-calendar3 me-1"></i>Tanggal Awal
+                            </label>
+                            <input type="date" class="form-control" name="tanggal_dari" id="tanggalDari"
+                                   value="<%= tanggalDari || '' %>">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tanggalSampai" class="form-label">
+                                <i class="bi bi-calendar3 me-1"></i>Tanggal Akhir
+                            </label>
+                            <input type="date" class="form-control" name="tanggal_sampai" id="tanggalSampai"
+                                   value="<%= tanggalSampai || '' %>">
+                        </div>
+                    </div>
+
+                    <!-- Filter berdasarkan OPD -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-warning border-bottom pb-2 mb-3">
+                                <i class="bi bi-buildings me-1"></i>Filter Berdasarkan OPD
+                            </h6>
+                        </div>
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-building-gear me-1"></i>Filter Kewenangan
+                                    <small class="text-muted">(Text Search)</small>
+                                </label>
+                                
+                                <!-- Simple Text Search Input -->
+                                <input type="text" class="form-control" name="kewenangan" id="kewenanganTextFilter"
+                                    value="<%= kewenanganFilter || '' %>" 
+                                    placeholder="Ketik kata kunci kewenangan untuk dicari...">
+                                
+                                <small class="form-text text-muted mt-1">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Pencarian akan mencari teks di dalam field kewenangan
+                                </small>
+                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="bi bi-people me-1"></i>Filter Stakeholder
+                            </label>
+                            <!-- OPD Filter Component for Stakeholder -->
+                            <div class="dropdown" id="filterStakeholderDropdown">
+                                <input type="text" class="form-control dropdown-toggle" id="filterStakeholderSearch"
+                                    placeholder="🔍 Pilih OPD stakeholder untuk filter..." data-bs-toggle="dropdown"
+                                    aria-expanded="false" autocomplete="off">
+                                <ul class="dropdown-menu w-100" id="filterStakeholderDropdownMenu"
+                                    style="max-height: 200px; overflow-y: auto;">
+                                    <li class="dropdown-item text-center text-muted">
+                                        <div class="spinner-border spinner-border-sm me-2"></div>
+                                        Memuat data OPD...
+                                    </li>
+                                </ul>
+                            </div>
+                            <div id="filterStakeholderSelected" class="mt-2">
+                                <div id="filterStakeholderBadges" class="d-flex flex-wrap gap-2"></div>
+                            </div>
+                            <input type="hidden" name="stakeholder" id="filterStakeholderHidden" value="<%= stakeholderFilter || '' %>">
+                        </div>
+                    </div>
+                    <!-- Info Alert -->
+                    <div class="alert alert-light border-primary">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
+                        <strong>Tips:</strong> 
+                        <ul class="mb-0 mt-2">
+                            <li>Semua filter dapat digunakan sendiri-sendiri atau dikombinasikan</li>
+                            <li>Pencarian teks tidak membedakan huruf besar/kecil</li>
+                            <li>Filter OPD dapat memilih multiple pilihan</li>
+                            <li>Kosongkan field untuk tidak memfilter bagian tersebut</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearAllFilters()">
+                        <i class="bi bi-eraser me-1"></i>Bersihkan Semua
+                    </button>
+                    <a href="/isu-prioritas" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset & Muat Ulang
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="filterSubmitBtn">
+                        <i class="bi bi-search me-1"></i>Terapkan Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Files untuk multiple files -->
+<% if (data && data.length > 0) { %>
+    <% data.forEach((item) => { %>
+        <% if (item.files && item.files.length > 1) { %>
+        <div class="modal fade" id="filesModal<%= item.id %>" tabindex="-1" aria-labelledby="filesModalLabel<%= item.id %>" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-files me-2"></i>File Attachments
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <% item.files.forEach((file, fileIndex) => { %>
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <%
+                                            // Get file icon
+                                            const ext = file.name.split('.').pop().toLowerCase();
+                                            let icon = 'bi-file-earmark';
+                                            let color = 'text-primary';
+                                            
+                                            if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
+                                                icon = 'bi-file-earmark-image'; color = 'text-success';
+                                            } else if (ext === 'pdf') {
+                                                icon = 'bi-file-earmark-pdf'; color = 'text-danger';
+                                            } else if (['doc', 'docx'].includes(ext)) {
+                                                icon = 'bi-file-earmark-word'; color = 'text-primary';
+                                            } else if (['xls', 'xlsx'].includes(ext)) {
+                                                icon = 'bi-file-earmark-excel'; color = 'text-success';
+                                            } else if (['ppt', 'pptx'].includes(ext)) {
+                                                icon = 'bi-file-earmark-ppt'; color = 'text-warning';
+                                            } else if (['zip', 'rar', '7z'].includes(ext)) {
+                                                icon = 'bi-file-earmark-zip'; color = 'text-info';
+                                            }
+                                            %>
+                                            <i class="bi <%= icon %> <%= color %> me-2" style="font-size: 2rem;"></i>
+                                            <div>
+                                                <h6 class="mb-1"><%= file.name %></h6>
+                                                <small class="text-muted">
+                                                    <%= (file.size / 1024).toFixed(1) %> KB
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2 mt-4">
+                                            <a href="/isu-prioritas/download/<%= item.id %>/<%= fileIndex %>" 
+                                               class="btn btn-success btn-sm" title="Download">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }) %>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="/isu-prioritas/download-all/<%= item.id %>" class="btn btn-success">
+                            <i class="bi bi-download me-1"></i>Download All (ZIP)
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% } %>
+    <% }) %>
+<% } %>
+
+<!-- Modal View Detail untuk setiap item -->
+<% if (data && data.length > 0) { %>
+    <% data.forEach((item) => { %>
+        <div class="modal fade" id="viewModal<%= item.id %>" tabindex="-1" aria-labelledby="viewModalLabel<%= item.id %>" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <div>
+                            <h5 class="modal-title mb-1">
+                                <i class="bi bi-file-text me-2"></i>Detail Isu Prioritas
+                            </h5>
+                            <small class="opacity-75">
+                                <i class="bi bi-calendar3 me-1"></i><%= new Date(item.tanggal_laporan).toLocaleDateString('id-ID') %>
+                            </small>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <!-- Header Info dengan OPD -->
+                        <div class="bg-light border-bottom p-4">
+                            <h4 class="mb-3"><%= item.judul %></h4>
+                            
+                            <!-- OPD Info Section -->
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-2">
+                                        <i class="bi bi-building-gear me-1"></i>Kewenangan:
+                                    </h6>
+                                    <% if (item.kewenanganNames && item.kewenanganNames.length > 0) { %>
+                                        <% item.kewenanganNames.forEach(function(textKewenangan) { %>
+                                            <span class="badge bg-primary me-1 mb-1">
+                                                <i class="bi bi-building-gear me-1"></i><%= textKewenangan %>
+                                            </span>
+                                        <% }); %>
+                                        </div>
+                                    <% } else { %>
+                                        <small class="text-muted">Tidak ada kewenangan yang ditetapkan</small>
+                                    <% } %>
+                                    <div class="col-md-6">
+                                        <h6 class="text-success mb-2">
+                                            <i class="bi bi-people me-1"></i>Stakeholder:
+                                        </h6>
+                                        <% if (item.stakeholderNames && item.stakeholderNames.length > 0) { %>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <% item.stakeholderNames.forEach(name => { %>
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-people me-1"></i><%= name %>
+                                                    </span>
+                                                <% }) %>
+                                            </div>
+                                        <% } else { %>
+                                            <small class="text-muted">Tidak ada stakeholder yang ditetapkan</small>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                </div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="uraian-content">
+                            <div class="content-wrapper p-4">
+                                <h6 class="text-muted mb-3">Isi Laporan:</h6>
+                                <div class="formatted-content">
+                                    <%- item.isi_laporan %>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="bi bi-x-lg me-1"></i>Tutup
+                                    </button>
+                                    <a href="/isu-prioritas/edit/<%= item.id %>" class="btn btn-warning">
+                                        <i class="bi bi-pencil-square me-1"></i>Edit
+                                    </a>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    <% }) %>
+<% } %>
+
+<!-- CSS untuk styling uraian -->
+<style>
+    /* Responsive table styling */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #mainTable {
+        min-width: 1200px; /* Minimum width untuk accommodate semua kolom */
+        word-wrap: break-word;
+    }
+    
+    #mainTable td {
+        vertical-align: middle;
+        max-width: 200px; /* Prevent cells from getting too wide */
+        overflow-wrap: break-word;
+    }
+    
+    /* Links styling */
+    .btn-outline-info {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Badge text wrapping */
+    .badge.text-wrap {
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+        #mainTable th:nth-child(4), 
+        #mainTable td:nth-child(4) { /* Kewenangan */
+            min-width: 120px;
+        }
+        
+        #mainTable th:nth-child(5), 
+        #mainTable td:nth-child(5) { /* Stakeholder */
+            min-width: 120px;
+        }
+        
+        #mainTable th:nth-child(6), 
+        #mainTable td:nth-child(6) { /* Links */
+            min-width: 150px;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        #mainTable {
+            font-size: 0.9rem;
+        }
+        
+        .badge {
+            font-size: 0.65rem !important;
+        }
+        
+        .btn-sm {
+            font-size: 0.7rem;
+        }
+    }
+
+    .uraian-content {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .content-title {
+        color: #2c3e50;
+        border-bottom: 3px solid #007bff;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .formatted-content {
+        line-height: 1.8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        font-size: 1rem;
+        color: #212529;
+    }
+    
+    .formatted-content h1, .formatted-content h2, .formatted-content h3,
+    .formatted-content h4, .formatted-content h5, .formatted-content h6 {
+        color: #2c3e50;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+    
+    .formatted-content p {
+        margin-bottom: 1.25rem;
+        text-align: justify;
+    }
+    
+    .formatted-content a {
+        color: #2563eb;
+        text-decoration: none;
+    }
+    
+    .formatted-content a:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+    
+    .formatted-content strong, .formatted-content b {
+        font-weight: 700;
+    }
+    
+    .formatted-content em, .formatted-content i {
+        font-style: italic;
+    }
+    
+    .formatted-content ul, .formatted-content ol {
+        margin-bottom: 1.5rem;
+        padding-left: 2rem;
+    }
+    
+    .formatted-content li {
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<script>
+// Enhanced Filter System with OPD Support
+class FilterOPDSelector {
+    constructor(type) {
+        this.type = type; // 'kewenangan' atau 'stakeholder'  
+        this.selectedItems = new Map();
+        this.opdData = [];
+        
+        this.searchInput = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}Search`);
+        this.dropdownMenu = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}DropdownMenu`);
+        this.badgesContainer = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}Badges`);
+        this.hiddenInput = document.getElementById(`filter${type.charAt(0).toUpperCase() + type.slice(1)}Hidden`);
+        
+        this.init();
+    }
+
+    init() {
+        this.prePopulateFromHidden();
+        this.loadOPDData();
+        this.bindEvents();
+    }
+
+    prePopulateFromHidden() {
+        const hiddenValue = this.hiddenInput.value;
+        if (hiddenValue.trim()) {
+            // Parse existing filter value and populate
+            const ids = hiddenValue.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+            // We'll populate the names after loading OPD data
+            this.selectedIds = ids;
+        }
+    }
+
+    async loadOPDData(search = '') {
+        try {
+            const response = await fetch(`/isu-prioritas/api/opd?search=${encodeURIComponent(search)}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                this.opdData = result.data;
+                
+                // Populate selected items if we have selectedIds from hidden input
+                if (this.selectedIds && this.selectedIds.length > 0) {
+                    this.selectedIds.forEach(id => {
+                        const opd = this.opdData.find(o => o.id === id);
+                        if (opd) {
+                            this.selectedItems.set(id, opd);
+                        }
+                    });
+                    this.renderSelectedBadges();
+                    delete this.selectedIds; // Clean up
+                }
+                
+                this.renderDropdownItems();
+            } else {
+                this.showErrorInDropdown();
+            }
+        } catch (error) {
+            console.error('Error loading OPD data:', error);
+            this.showErrorInDropdown();
+        }
+    }
+
+    renderDropdownItems() {
+        if (this.opdData.length === 0) {
+            this.dropdownMenu.innerHTML = '<li class="dropdown-item text-center text-muted">Tidak ada OPD ditemukan</li>';
+            return;
+        }
+
+        const filteredData = this.opdData.filter(opd => !this.selectedItems.has(opd.id));
+        
+        if (filteredData.length === 0) {
+            this.dropdownMenu.innerHTML = '<li class="dropdown-item text-center text-muted">Semua OPD sudah dipilih</li>';
+            return;
+        }
+
+        this.dropdownMenu.innerHTML = '';
+        
+        filteredData.forEach(opd => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <a class="dropdown-item d-flex align-items-center" href="#" data-opd-id="${opd.id}">
+                    <i class="bi bi-buildings me-2 text-primary"></i>
+                    <span>${opd.nama_opd}</span>
+                </a>
+            `;
+            
+            li.querySelector('a').addEventListener('click', (e) => {
+                e.preventDefault();
+                this.selectItem(opd);
+                this.searchInput.value = '';
+                this.searchInput.blur();
+            });
+            
+            this.dropdownMenu.appendChild(li);
+        });
+    }
+
+    selectItem(opd) {
+        this.selectedItems.set(opd.id, opd);
+        this.renderSelectedBadges();
+        this.updateHiddenInput();
+        this.renderDropdownItems();
+    }
+
+    removeItem(opdId) {
+        this.selectedItems.delete(opdId);
+        this.renderSelectedBadges();
+        this.updateHiddenInput();
+        this.renderDropdownItems();
+    }
+
+    clearAll() {
+        this.selectedItems.clear();
+        this.renderSelectedBadges();
+        this.updateHiddenInput();
+        this.renderDropdownItems();
+    }
+
+    renderSelectedBadges() {
+        this.badgesContainer.innerHTML = '';
+        
+        if (this.selectedItems.size === 0) {
+            const emptyMsg = document.createElement('small');
+            emptyMsg.className = 'text-muted';
+            emptyMsg.innerHTML = `<i class="bi bi-info-circle me-1"></i>Belum ada filter ${this.type}`;
+            this.badgesContainer.appendChild(emptyMsg);
+            return;
+        }
+
+        this.selectedItems.forEach((opd) => {
+            const badge = document.createElement('span');
+            const badgeClass = this.type === 'kewenangan' ? 'bg-primary' : 'bg-success';
+            const icon = this.type === 'kewenangan' ? 'bi-building-gear' : 'bi-people';
+
+            badge.className = `badge ${badgeClass} fs-6 py-2 px-3`;
+            badge.innerHTML = `
+                <i class="bi ${icon} me-2"></i>
+                ${opd.nama_opd}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        style="font-size: 0.7rem; padding: 0;" 
+                        title="Hapus ${opd.nama_opd}"></button>
+            `;
+
+            badge.querySelector('.btn-close').addEventListener('click', () => {
+                this.removeItem(opd.id);
+            });
+
+            this.badgesContainer.appendChild(badge);
+        });
+    }
+
+    updateHiddenInput() {
+        const selectedIds = Array.from(this.selectedItems.keys());
+        this.hiddenInput.value = selectedIds.join(',');
+    }
+
+    bindEvents() {
+        let searchTimeout;
+        this.searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.loadOPDData(e.target.value);
+            }, 300);
+        });
+
+        this.searchInput.addEventListener('focus', () => {
+            if (this.opdData.length === 0) {
+                this.loadOPDData();
+            }
+        });
+
+        this.dropdownMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    showErrorInDropdown() {
+        this.dropdownMenu.innerHTML = '<li class="dropdown-item text-center text-muted text-danger">Gagal memuat data OPD</li>';
+    }
+}
+
+// Initialize Filter OPD Selectors
+let filterKewenanganSelector, filterStakeholderSelector;
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterStakeholderSelector = new FilterOPDSelector('stakeholder');
+
+    // FIXED: Limit selector functionality
+    initializeLimitSelector();
+});
+
+// FIXED: Proper limit selector implementation
+function initializeLimitSelector() {
+    const limitSelect = document.getElementById('limitSelect');
+    if (limitSelect) {
+        limitSelect.addEventListener('change', function() {
+            const selectedLimit = parseInt(this.value);
+            
+            // Build current filter parameters
+            const currentParams = new URLSearchParams();
+            
+            // Add existing filters
+            const tanggalDari = '<%= tanggalDari %>';
+            const tanggalSampai = '<%= tanggalSampai %>';
+            const judulSearch = '<%= judulSearch %>';
+            const uraianSearch = '<%= uraianSearch %>';
+            const kewenanganFilter = '<%= kewenanganFilter %>';
+            const stakeholderFilter = '<%= stakeholderFilter %>';
+            
+            if (tanggalDari) currentParams.append('tanggal_dari', tanggalDari);
+            if (tanggalSampai) currentParams.append('tanggal_sampai', tanggalSampai);
+            if (judulSearch) currentParams.append('judul', judulSearch);
+            if (uraianSearch) currentParams.append('uraian', uraianSearch);
+            if (kewenanganFilter) currentParams.append('kewenangan', kewenanganFilter);
+            if (stakeholderFilter) currentParams.append('stakeholder', stakeholderFilter);
+            
+            // Add limit parameter
+            if (selectedLimit !== 10) {
+                currentParams.append('limit', selectedLimit);
+            }
+
+            // Calculate target page to maintain current record position
+            const currentStartRecord = parseInt('<%= pagination.startRecord %>') || 1;
+            const targetPage = Math.ceil(currentStartRecord / selectedLimit);
+            
+            if (targetPage > 1) {
+                currentParams.append('page', targetPage);
+            }
+
+            // Navigate to new URL
+            const newUrl = '/isu-prioritas' + (currentParams.toString() ? '?' + currentParams.toString() : '');
+            showTableLoading();
+            window.location.href = newUrl;
+        });
+    }
+}
+
+// Clear all filters function
+function clearAllFilters() {
+    // Clear text inputs
+    document.getElementById('judulSearch').value = '';
+    document.getElementById('uraianSearch').value = '';
+    document.getElementById('tanggalDari').value = '';
+    document.getElementById('tanggalSampai').value = '';
+    document.getElementById('kewenanganTextFilter').value = '';
+    
+    // Clear OPD filters
+    if (filterStakeholderSelector) filterStakeholderSelector.clearAll();
+}
+
+// Enhanced form submit
+document.getElementById('filterForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('filterSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menerapkan Filter...';
+    showTableLoading();
+});
+
+function showTableLoading() {
+    const tableLoading = document.getElementById('tableLoading');
+    const mainTable = document.getElementById('mainTable');
+    if (tableLoading && mainTable) {
+        tableLoading.style.display = 'block';
+        tableLoading.style.height = mainTable.offsetHeight + 'px';
+        mainTable.style.opacity = '0.5';
+    }
+}
+</script>

@@ -1,0 +1,826 @@
+<div class="container mt-4">
+    <h3 class="mb-4">Tambah Isu Khusus</h3>
+
+    <form action="/isu-khusus/store" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">Judul</label>
+            <input type="text" name="judul" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tanggal Laporan</label>
+            <input type="date" name="tanggal_laporan" class="form-control" required>
+        </div>
+
+        <!-- OPD SECTION -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">
+                    <i class="bi bi-building-gear me-1"></i>Kewenangan
+                    <small class="text-muted">(Manual Input)</small>
+                </label>
+
+                <!-- Text Input untuk menambah kewenangan -->
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" id="kewenanganTextInput"
+                        placeholder="Ketik kewenangan dan tekan Enter atau koma..." autocomplete="off">
+                    <button type="button" class="btn btn-outline-primary" id="addKewenanganBtn">
+                        <i class="bi bi-plus"></i> Tambah
+                    </button>
+                </div>
+
+                <!-- Selected Items Display -->
+                <div id="kewenanganSelected" class="mt-2" style="min-height: 40px;">
+                    <div id="kewenanganBadges" class="d-flex flex-wrap gap-2"></div>
+                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="kewenanganClearAll"
+                        style="display: none;">
+                        <i class="bi bi-trash"></i> Clear All
+                    </button>
+                </div>
+
+                <!-- Hidden inputs untuk form submit -->
+                <div id="kewenanganHiddenInputs"></div>
+
+                <small class="form-text text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Ketik teks kewenangan, pisahkan dengan koma atau tekan Enter
+                </small>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">
+                    <i class="bi bi-people me-1"></i>Stakeholder
+                    <small class="text-muted">(Optional)</small>
+                </label>
+                <!-- Search Input -->
+                <div class="dropdown" id="stakeholderDropdown">
+                    <input type="text" class="form-control dropdown-toggle" id="stakeholderSearch"
+                        placeholder="🔍 Cari dan pilih OPD stakeholder..." data-bs-toggle="dropdown"
+                        aria-expanded="false" autocomplete="off">
+                    <ul class="dropdown-menu w-100" id="stakeholderDropdownMenu"
+                        style="max-height: 200px; overflow-y: auto;">
+                        <li class="dropdown-item text-center text-muted">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Memuat data OPD...
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Selected Items -->
+                <div id="stakeholderSelected" class="mt-2" style="min-height: 40px;">
+                    <div id="stakeholderBadges" class="d-flex flex-wrap gap-2"></div>
+                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="stakeholderClearAll"
+                        style="display: none;">
+                        <i class="bi bi-trash"></i> Clear All
+                    </button>
+                </div>
+
+                <!-- Hidden inputs untuk form submit -->
+                <div id="stakeholderHiddenInputs"></div>
+            </div>
+        </div>
+        <!-- LINKS SECTION -->
+        <div class="mt-4 mb-3">
+            <label class="form-label">
+                <i class="bi bi-link-45deg me-1"></i>Links Terkait
+                <small class="text-muted">(Optional)</small>
+            </label>
+
+            <!-- Text Input untuk menambah links -->
+            <div class="input-group mb-2">
+                <input type="text" class="form-control" id="linksTextInput"
+                    placeholder="Masukkan URL link dan tekan Enter atau koma..." autocomplete="off">
+                <button type="button" class="btn btn-outline-success" id="addLinksBtn">
+                    <i class="bi bi-plus"></i> Tambah Link
+                </button>
+            </div>
+
+            <!-- Selected Links Display -->
+            <div id="linksSelected" class="mt-2" style="min-height: 40px;">
+                <div id="linksBadges" class="d-flex flex-wrap gap-2"></div>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-2" id="linksClearAll"
+                    style="display: none;">
+                    <i class="bi bi-trash"></i> Clear All Links
+                </button>
+            </div>
+
+            <!-- Hidden inputs untuk form submit -->
+            <div id="linksHiddenInputs"></div>
+
+            <small class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Masukkan URL lengkap (contoh: https://tiktok.com/@user, https://youtube.com/watch?v=xyz)
+            </small>
+        </div>
+        <div class="mt-4 mb-3">
+            <label class="form-label">Isi Laporan</label>
+            <textarea id="isi_laporan" name="isi_laporan" rows="6" class="form-control"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Upload File</label>
+            <input type="file" name="files" class="form-control" multiple id="fileInput">
+            <small class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Dapat memilih multiple files, semua format file diterima, tanpa batasan ukuran
+            </small>
+
+            <!-- Preview Selected Files -->
+            <div id="filesPreview" class="mt-3" style="display: none;">
+                <label class="form-label">File yang akan diupload:</label>
+                <div id="filesList" class="border rounded p-3 bg-light">
+                    <!-- Files akan ditampilkan di sini -->
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllFiles()">
+                        <i class="bi bi-trash"></i> Hapus Semua File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-warning">
+            <i class="bi bi-save"></i> Simpan
+        </button>
+        <a href="/isu-khusus" class="btn btn-secondary">Batal</a>
+    </form>
+</div>
+</div>
+
+
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+    let selectedFiles = [];
+
+    // Inisialisasi CKEditor
+    ClassicEditor
+        .create(document.querySelector('#isi_laporan'))
+        .then(editor => {
+            // Custom validation untuk CKEditor
+            editor.model.document.on('change:data', () => {
+                const data = editor.getData();
+                const textarea = document.querySelector('#isi_laporan');
+                textarea.value = data;
+
+                // Remove custom validation styling if content exists
+                if (data.trim()) {
+                    textarea.setCustomValidity('');
+                    editor.ui.view.editable.element.style.border = '';
+                }
+            });
+
+            // Sync CKEditor data to textarea on form submit
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function (e) {
+                const data = editor.getData();
+                const textarea = document.querySelector('#isi_laporan');
+                textarea.value = data;
+
+                // Custom validation untuk CKEditor
+                if (!data.trim()) {
+                    e.preventDefault();
+                    editor.ui.view.editable.element.style.border = '2px solid #dc3545';
+                    editor.ui.view.editable.element.focus();
+
+                    // Show error message
+                    let errorMsg = document.getElementById('ckEditorError');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.id = 'ckEditorError';
+                        errorMsg.className = 'text-danger mt-2';
+                        errorMsg.innerHTML = '<small><i class="bi bi-exclamation-triangle me-1"></i>Isi laporan wajib diisi</small>';
+                        document.querySelector('#isi_laporan').parentNode.appendChild(errorMsg);
+                    }
+                    errorMsg.style.display = 'block';
+
+                    alert('Isi laporan wajib diisi!');
+                    return false;
+                } else {
+                    // Remove error styling and message
+                    editor.ui.view.editable.element.style.border = '';
+                    const errorMsg = document.getElementById('ckEditorError');
+                    if (errorMsg) {
+                        errorMsg.style.display = 'none';
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+    //OPD
+    class OPDSelector {
+        constructor(type) {
+            this.type = type; // 'kewenangan' atau 'stakeholder'
+            this.selectedItems = new Map(); // Map untuk menyimpan selected items (id -> {id, nama})
+            this.opdData = []; // Cache untuk data OPD
+            this.isLoading = false;
+
+            this.searchInput = document.getElementById(`${type}Search`);
+            this.dropdownMenu = document.getElementById(`${type}DropdownMenu`);
+            this.badgesContainer = document.getElementById(`${type}Badges`);
+            this.clearAllBtn = document.getElementById(`${type}ClearAll`);
+            this.hiddenInputsContainer = document.getElementById(`${type}HiddenInputs`);
+
+            this.init();
+        }
+
+        init() {
+            this.loadOPDData();
+            this.bindEvents();
+        }
+
+        async loadOPDData(search = '') {
+            if (this.isLoading) return;
+
+            this.isLoading = true;
+            this.showLoadingInDropdown();
+
+            try {
+                const response = await fetch(`/isu-khusus/api/opd?search=${encodeURIComponent(search)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    this.opdData = result.data;
+                    this.renderDropdownItems();
+                } else {
+                    this.showErrorInDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading OPD data:', error);
+                this.showErrorInDropdown();
+            } finally {
+                this.isLoading = false;
+            }
+        }
+
+        bindEvents() {
+            // Search input events
+            let searchTimeout;
+            this.searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.loadOPDData(e.target.value);
+                }, 300);
+            });
+
+            // Focus event to show dropdown
+            this.searchInput.addEventListener('focus', () => {
+                if (this.opdData.length === 0) {
+                    this.loadOPDData();
+                }
+            });
+
+            // Clear all button
+            this.clearAllBtn.addEventListener('click', () => {
+                this.clearAll();
+            });
+
+            // Prevent dropdown close when clicking inside
+            this.dropdownMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+
+        showLoadingInDropdown() {
+            this.dropdownMenu.innerHTML = `
+            <li class="dropdown-item text-center text-muted">
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                Memuat data OPD...
+            </li>
+        `;
+        }
+
+        showErrorInDropdown() {
+            this.dropdownMenu.innerHTML = `
+            <li class="dropdown-item text-center text-muted">
+                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                Gagal memuat data OPD
+            </li>
+        `;
+        }
+
+        renderDropdownItems() {
+            if (this.opdData.length === 0) {
+                this.dropdownMenu.innerHTML = `
+                <li class="dropdown-item text-center text-muted">
+                    <i class="bi bi-search me-2"></i>
+                    Tidak ada OPD ditemukan
+                </li>
+            `;
+                return;
+            }
+
+            const filteredData = this.opdData.filter(opd => !this.selectedItems.has(opd.id));
+
+            if (filteredData.length === 0) {
+                this.dropdownMenu.innerHTML = `
+                <li class="dropdown-item text-center text-muted">
+                    <i class="bi bi-check-circle text-success me-2"></i>
+                    Semua OPD sudah dipilih
+                </li>
+            `;
+                return;
+            }
+
+            this.dropdownMenu.innerHTML = '';
+
+            filteredData.forEach(opd => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                <a class="dropdown-item d-flex align-items-center" href="#" data-opd-id="${opd.id}">
+                    <i class="bi bi-buildings bi me-2 text-primary"></i>
+                    <span>${opd.nama_opd}</span>
+                </a>
+            `;
+
+                li.querySelector('a').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.selectItem(opd);
+                    this.searchInput.value = '';
+                    this.searchInput.blur();
+                });
+
+                this.dropdownMenu.appendChild(li);
+            });
+        }
+
+        selectItem(opd) {
+            this.selectedItems.set(opd.id, opd);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.renderDropdownItems(); // Re-render untuk hide selected item
+            this.toggleClearAllButton();
+        }
+
+        removeItem(opdId) {
+            this.selectedItems.delete(opdId);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.renderDropdownItems(); // Re-render untuk show item again
+            this.toggleClearAllButton();
+        }
+
+        clearAll() {
+            this.selectedItems.clear();
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.renderDropdownItems();
+            this.toggleClearAllButton();
+        }
+
+        renderSelectedBadges() {
+            this.badgesContainer.innerHTML = '';
+
+            if (this.selectedItems.size === 0) {
+                const emptyMsg = document.createElement('small');
+                emptyMsg.className = 'text-muted';
+                emptyMsg.innerHTML = `<i class="bi bi-info-circle me-1"></i>Belum ada ${this.type} dipilih`;
+                this.badgesContainer.appendChild(emptyMsg);
+                return;
+            }
+
+            this.selectedItems.forEach((opd) => {
+                const badge = document.createElement('span');
+                const badgeClass = this.type === 'kewenangan' ? 'bg-primary' : 'bg-success';
+                const icon = this.type === 'kewenangan' ? 'bi-building-gear' : 'bi-people';
+
+                badge.className = `badge ${badgeClass} fs-6 py-2 px-3`;
+                badge.innerHTML = `
+                <i class="bi ${icon} me-2"></i>
+                ${opd.nama_opd}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        style="font-size: 0.7rem; padding: 0;" 
+                        title="Hapus ${opd.nama_opd}"></button>
+            `;
+
+                badge.querySelector('.btn-close').addEventListener('click', () => {
+                    this.removeItem(opd.id);
+                });
+
+                this.badgesContainer.appendChild(badge);
+            });
+        }
+
+        updateHiddenInputs() {
+            this.hiddenInputsContainer.innerHTML = '';
+
+            this.selectedItems.forEach((opd) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `${this.type}[]`;
+                input.value = opd.id;
+                this.hiddenInputsContainer.appendChild(input);
+            });
+        }
+
+        toggleClearAllButton() {
+            this.clearAllBtn.style.display = this.selectedItems.size > 0 ? 'inline-block' : 'none';
+        }
+    }
+
+    // ============ JAVASCRIPT UNTUK KEWENANGAN TEXT INPUT ============
+
+    class KewenanganTextSelector {
+        constructor() {
+            this.selectedItems = new Set(); // Set untuk text items
+
+            this.textInput = document.getElementById('kewenanganTextInput');
+            this.addBtn = document.getElementById('addKewenanganBtn');
+            this.badgesContainer = document.getElementById('kewenanganBadges');
+            this.clearAllBtn = document.getElementById('kewenanganClearAll');
+            this.hiddenInputsContainer = document.getElementById('kewenanganHiddenInputs');
+
+            this.init();
+        }
+
+        init() {
+            this.bindEvents();
+            this.renderSelectedBadges();
+        }
+
+        bindEvents() {
+            // Add button click
+            this.addBtn.addEventListener('click', () => {
+                this.addFromInput();
+            });
+
+            // Enter key or comma in input
+            this.textInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addFromInput();
+                } else if (e.key === ',') {
+                    e.preventDefault();
+                    this.addFromInput();
+                }
+            });
+
+            // Auto-add on comma input (real-time)
+            this.textInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.includes(',')) {
+                    const parts = value.split(',');
+                    const toAdd = parts.slice(0, -1).map(p => p.trim()).filter(p => p);
+                    const remaining = parts[parts.length - 1];
+
+                    toAdd.forEach(text => this.addItem(text));
+                    this.textInput.value = remaining;
+                }
+            });
+
+            // Clear all button
+            this.clearAllBtn.addEventListener('click', () => {
+                this.clearAll();
+            });
+        }
+
+        addFromInput() {
+            const value = this.textInput.value.trim();
+            if (value) {
+                // Split by comma and add each
+                const items = value.split(',').map(item => item.trim()).filter(item => item);
+                items.forEach(item => this.addItem(item));
+                this.textInput.value = '';
+            }
+        }
+
+        addItem(text) {
+            if (!text || this.selectedItems.has(text)) return;
+
+            this.selectedItems.add(text);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        removeItem(text) {
+            this.selectedItems.delete(text);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        clearAll() {
+            this.selectedItems.clear();
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        renderSelectedBadges() {
+            this.badgesContainer.innerHTML = '';
+
+            if (this.selectedItems.size === 0) {
+                const emptyMsg = document.createElement('small');
+                emptyMsg.className = 'text-muted';
+                emptyMsg.innerHTML = '<i class="bi bi-info-circle me-1"></i>Belum ada kewenangan ditambahkan';
+                this.badgesContainer.appendChild(emptyMsg);
+                return;
+            }
+
+            this.selectedItems.forEach((text) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary fs-6 py-2 px-3';
+                badge.innerHTML = `
+                <i class="bi bi-building-gear me-2"></i>
+                ${text}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        style="font-size: 0.7rem; padding: 0;" 
+                        title="Hapus ${text}"></button>
+            `;
+
+                badge.querySelector('.btn-close').addEventListener('click', () => {
+                    this.removeItem(text);
+                });
+
+                this.badgesContainer.appendChild(badge);
+            });
+        }
+
+        updateHiddenInputs() {
+            this.hiddenInputsContainer.innerHTML = '';
+
+            this.selectedItems.forEach((text) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'kewenangan[]';
+                input.value = text;
+                this.hiddenInputsContainer.appendChild(input);
+            });
+        }
+
+        toggleClearAllButton() {
+            this.clearAllBtn.style.display = this.selectedItems.size > 0 ? 'inline-block' : 'none';
+        }
+    }
+
+    // Initialize OPD Selectors
+    let kewenanganSelector, stakeholderSelector;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const kewenanganTextSelector = new KewenanganTextSelector();
+        stakeholderSelector = new OPDSelector('stakeholder');
+    });
+
+    // Display files preview
+    function displayFilesPreview(files) {
+        const preview = document.getElementById('filesPreview');
+        const filesList = document.getElementById('filesList');
+
+        preview.style.display = 'block';
+        filesList.innerHTML = '';
+
+        files.forEach((file, index) => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 bg-white rounded border';
+
+            // Get file icon based on extension
+            const extension = file.name.split('.').pop().toLowerCase();
+            let iconClass = 'bi-file-earmark';
+            let iconColor = 'text-primary';
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+                iconClass = 'bi-file-earmark-image';
+                iconColor = 'text-success';
+            } else if (['pdf'].includes(extension)) {
+                iconClass = 'bi-file-earmark-pdf';
+                iconColor = 'text-danger';
+            } else if (['doc', 'docx'].includes(extension)) {
+                iconClass = 'bi-file-earmark-word';
+                iconColor = 'text-primary';
+            } else if (['xls', 'xlsx'].includes(extension)) {
+                iconClass = 'bi-file-earmark-excel';
+                iconColor = 'text-success';
+            } else if (['ppt', 'pptx'].includes(extension)) {
+                iconClass = 'bi-file-earmark-ppt';
+                iconColor = 'text-warning';
+            } else if (['zip', 'rar', '7z'].includes(extension)) {
+                iconClass = 'bi-file-earmark-zip';
+                iconColor = 'text-info';
+            } else if (['txt'].includes(extension)) {
+                iconClass = 'bi-file-earmark-text';
+            }
+
+            fileDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi ${iconClass} me-2 ${iconColor}"></i>
+                    <div>
+                        <strong>${file.name}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${(file.size / 1024).toFixed(1)} KB
+                            ${extension.toUpperCase()}
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" 
+                        onclick="removeFile(${index})" title="Hapus file">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+
+            filesList.appendChild(fileDiv);
+        });
+    }
+
+    // Remove individual file
+    function removeFile(index) {
+        const fileInput = document.getElementById('fileInput');
+        const dt = new DataTransfer();
+
+        // Rebuild file list without the removed file
+        Array.from(fileInput.files).forEach((file, i) => {
+            if (i !== index) {
+                dt.items.add(file);
+            }
+        });
+
+        fileInput.files = dt.files;
+
+        // Update preview
+        if (fileInput.files.length > 0) {
+            displayFilesPreview(Array.from(fileInput.files));
+        } else {
+            document.getElementById('filesPreview').style.display = 'none';
+        }
+    }
+
+    // Clear all files
+    function clearAllFiles() {
+        document.getElementById('fileInput').value = '';
+        document.getElementById('filesPreview').style.display = 'none';
+    }
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const judul = document.querySelector('input[name="judul"]').value.trim();
+        const tanggal = document.querySelector('input[name="tanggal_laporan"]').value;
+        const isi = document.querySelector('#isi_laporan').value.trim();
+
+        if (!judul || !tanggal || !isi) {
+            e.preventDefault();
+            alert('Semua field wajib diisi!');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    });
+
+    class LinksTextSelector {
+        constructor() {
+            this.selectedItems = new Set(); // Set untuk links items
+
+            this.textInput = document.getElementById('linksTextInput');
+            this.addBtn = document.getElementById('addLinksBtn');
+            this.badgesContainer = document.getElementById('linksBadges');
+            this.clearAllBtn = document.getElementById('linksClearAll');
+            this.hiddenInputsContainer = document.getElementById('linksHiddenInputs');
+
+            this.init();
+        }
+
+        init() {
+            this.bindEvents();
+            this.renderSelectedBadges();
+        }
+
+        bindEvents() {
+            // Add button click
+            this.addBtn.addEventListener('click', () => {
+                this.addFromInput();
+            });
+
+            // Enter key or comma in input
+            this.textInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addFromInput();
+                } else if (e.key === ',') {
+                    e.preventDefault();
+                    this.addFromInput();
+                }
+            });
+
+            // Auto-add on comma input (real-time)
+            this.textInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.includes(',')) {
+                    const parts = value.split(',');
+                    const toAdd = parts.slice(0, -1).map(p => p.trim()).filter(p => p);
+                    const remaining = parts[parts.length - 1];
+
+                    toAdd.forEach(link => this.addItem(link));
+                    this.textInput.value = remaining;
+                }
+            });
+
+            // Clear all button
+            this.clearAllBtn.addEventListener('click', () => {
+                this.clearAll();
+            });
+        }
+
+        addFromInput() {
+            const value = this.textInput.value.trim();
+            if (value) {
+                const items = value.split(',').map(item => item.trim()).filter(item => item);
+                items.forEach(item => this.addItem(item));
+                this.textInput.value = '';
+            }
+        }
+
+        addItem(link) {
+            if (!link || this.selectedItems.has(link)) return;
+
+            // Basic URL validation and auto-fix
+            let cleanLink = link;
+            if (!cleanLink.match(/^https?:\/\//)) {
+                cleanLink = 'https://' + cleanLink;
+            }
+
+            this.selectedItems.add(cleanLink);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        removeItem(link) {
+            this.selectedItems.delete(link);
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        clearAll() {
+            this.selectedItems.clear();
+            this.renderSelectedBadges();
+            this.updateHiddenInputs();
+            this.toggleClearAllButton();
+        }
+
+        renderSelectedBadges() {
+            this.badgesContainer.innerHTML = '';
+
+            if (this.selectedItems.size === 0) {
+                const emptyMsg = document.createElement('small');
+                emptyMsg.className = 'text-muted';
+                emptyMsg.innerHTML = '<i class="bi bi-info-circle me-1"></i>Belum ada links ditambahkan';
+                this.badgesContainer.appendChild(emptyMsg);
+                return;
+            }
+
+            this.selectedItems.forEach((link) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-info fs-6 py-2 px-3 me-2 mb-2 d-inline-flex align-items-center';
+
+                // Truncate long URLs for display
+                const displayLink = link.length > 50 ? link.substring(0, 47) + '...' : link;
+
+                badge.innerHTML = `
+                <i class="bi bi-link-45deg me-2"></i>
+                <a href="${link}" target="_blank" class="text-white text-decoration-none me-2" title="${link}">
+                    ${displayLink}
+                </a>
+                <button type="button" class="btn-close btn-close-white ms-1" 
+                        style="font-size: 0.7rem; padding: 0;" 
+                        title="Hapus ${link}"></button>
+            `;
+
+                badge.querySelector('.btn-close').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.removeItem(link);
+                });
+
+                this.badgesContainer.appendChild(badge);
+            });
+        }
+
+        updateHiddenInputs() {
+            this.hiddenInputsContainer.innerHTML = '';
+
+            this.selectedItems.forEach((link) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'links[]';
+                input.value = link;
+                this.hiddenInputsContainer.appendChild(input);
+            });
+        }
+
+        toggleClearAllButton() {
+            this.clearAllBtn.style.display = this.selectedItems.size > 0 ? 'inline-block' : 'none';
+        }
+    }
+
+    // Initialize Links Selector
+    document.addEventListener('DOMContentLoaded', function () {
+        const kewenanganTextSelector = new KewenanganTextSelector();
+        stakeholderSelector = new OPDSelector('stakeholder');
+        const linksTextSelector = new LinksTextSelector();
+    });
+</script>

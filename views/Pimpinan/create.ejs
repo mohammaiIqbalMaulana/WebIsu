@@ -1,0 +1,94 @@
+<div class="container mt-4">
+    <h3 class="mb-4">Tambah Pimpinan Baru</h3>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex align-items-center">
+                            <a href="/pimpinan" class="btn btn-light btn-sm me-3">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h4 class="mb-0">
+                                <i class="bi bi-person-plus me-2"></i>
+                                <%= title %>
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Error Alert -->
+                        <% if (errors) { %>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <%= errors %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <% } %>
+
+                                <!-- Form -->
+                                <form action="/pimpinan" method="POST" novalidate>
+                                    <div class="mb-4">
+                                        <label for="jabatan_pimpinan" class="form-label fw-bold">
+                                            <i class="bi bi-buildings me-2 text-primary"></i>Nama Pimpinan
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-lg" id="jabatan_pimpinan"
+                                            name="jabatan_pimpinan" placeholder="Masukkan nama Pimpinan..."
+                                            maxlength="255" required>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Maksimal 255 karakter
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Actions -->
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <a href="/pimpinan" class="btn btn-secondary">
+                                            <i class="bi bi-times me-1"></i>Batal
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save me-1"></i>Simpan Pimpinan
+                                        </button>
+                                    </div>
+                                </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto focus on input
+        document.getElementById('jabatan_pimpinan').focus();
+
+        // Real-time validation
+        const namaPimpinanInput = document.getElementById('jabatan_pimpinan');
+        const form = document.querySelector('form');
+
+        namaPimpinanInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            
+            if (value === '') {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Form validation
+        form.addEventListener('submit', function(e) {
+            const namaPimpinan = namaPimpinanInput.value.trim();
+            
+            if (namaPimpinan === '') {
+                e.preventDefault();
+                namaPimpinanInput.classList.add('is-invalid');
+                namaPimpinanInput.focus();
+                return false;
+            }
+        });
+    </script>
+</div>

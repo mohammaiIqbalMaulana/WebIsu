@@ -1,0 +1,279 @@
+<div class="container mt-4">
+    <h3 class="mb-4">Daftar Pimpinan</h3>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="bi bi-buildings me-2"></i>
+                                <%= title %>
+                            </h4>
+                            <a href="/pimpinan/create" class="btn btn-light btn-sm">
+                                <i class="bi bi-person-plus me-1"></i>Tambah Pimpinan
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Alert Messages -->
+                        <% if (message) { %>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <%= message %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <% } %>
+                                <!-- Data Table -->
+                                <% if (pimpinans && pimpinans.length> 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th scope="col" width="5%">No</th>
+                                                    <th scope="col">Nama Pimpinan</th>
+                                                    <th scope="col" width="15%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% pimpinans.forEach((pimpinan, index)=> { %>
+                                                    <tr id="row-<%= pimpinan.id_pimpinan %>"
+                                                        data-id="<%= pimpinan.id_pimpinan %>">
+                                                        <td>
+                                                            <%= index + 1 %>
+                                                        </td>
+                                                        <td>
+                                                            <strong>
+                                                                <%= pimpinan.jabatan_pimpinan %>
+                                                            </strong>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group" role="group">
+                                                                <a href="/pimpinan/edit/<%= pimpinan.id_pimpinan %>"
+                                                                    class="btn btn-warning btn-sm" title="Edit">
+                                                                    <i class="bi bi-pencil-square"></i>
+                                                                </a>
+                                                                <button onclick="deletePimpinan(this)"
+                                                                    class="btn btn-danger btn-sm" title="Hapus"
+                                                                    data-id="<%= pimpinan .id_pimpinan %>"
+                                                                    data-name="<%= pimpinan.jabatan_pimpinan %>">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <% }) %>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-inbox text-muted mb-3"></i>
+                                            <h5 class="text-muted">Belum ada data Pimpinan</h5>
+                                            <p class="text-muted">Klik tombol "Tambah Pimpinan" untuk menambah data baru
+                                            </p>
+                                            <a href="/pimpinan/create" class="btn btn-primary">
+                                                <i class="bi bi-person-plus me-1"></i>Tambah Pimpinan Pertama
+                                            </a>
+                                        </div>
+                                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-x-circle me-2"></i>Konfirmasi Hapus
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Apakah Anda yakin ingin menghapus Pimpinan:</p>
+                    <p class="fw-bold text-danger mb-3" id="pimpinanName"></p>
+                    <input type="hidden" id="deleteId">
+                    <p class="text-muted small">Data yang dihapus tidak dapat dikembalikan.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">
+                        <i class="bi bi-trash me-1"></i>Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Pimpinan Management Script - Fixed Version
+        class PimpinanManager {
+            constructor() {
+                this.deleteModal = null;
+                this.currentDeleteId = null;
+                this.currentDeleteName = null;
+                this.init();
+            }
+
+            init() {
+                this.setupModal();
+                this.bindEvents();
+            }
+
+            setupModal() {
+                const modalElement = document.getElementById('deleteModal');
+                if (modalElement) {
+                    this.deleteModal = new bootstrap.Modal(modalElement);
+                }
+            }
+
+            bindEvents() {
+                // Handle modal hidden event
+                const modalElement = document.getElementById('deleteModal');
+                if (modalElement) {
+                    modalElement.addEventListener('hidden.bs.modal', () => {
+                        this.resetDeleteState();
+                    });
+                }
+
+                // Bind tombol konfirmasi hapus
+                const confirmBtn = document.getElementById('confirmDelete');
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', () => this.confirmDelete());
+                }
+            }
+
+            resetDeleteState() {
+                this.currentDeleteId = null;
+                this.currentDeleteName = null;
+                const confirmBtn = document.getElementById('confirmDelete');
+                if (confirmBtn) {
+                    confirmBtn.innerHTML = '<i class="bi bi-trash me-1"></i>Hapus';
+                    confirmBtn.disabled = false;
+                }
+            }
+
+            showAlert(type, message) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+
+                const cardBody = document.querySelector('.card-body');
+                if (cardBody) {
+                    const existingAlerts = cardBody.querySelectorAll('.alert');
+                    existingAlerts.forEach(alert => alert.remove());
+
+                    cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+
+                    setTimeout(() => {
+                        const alert = cardBody.querySelector('.alert');
+                        if (alert) {
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        }
+                    }, 5000);
+                }
+            }
+
+            updateRowNumbers() {
+                const tbody = document.querySelector('tbody');
+                if (tbody) {
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach((row, index) => {
+                        const noCell = row.querySelector('td:first-child');
+                        if (noCell) {
+                            noCell.textContent = index + 1;
+                        }
+                    });
+                }
+            }
+
+            removeRow(rowId) {
+                const row = document.getElementById(`row-${rowId}`);
+                if (row) {
+                    row.style.transition = 'opacity 0.3s';
+                    row.style.opacity = '0';
+
+                    setTimeout(() => {
+                        row.remove();
+                        this.updateRowNumbers();
+
+                        const tbody = document.querySelector('tbody');
+                        if (tbody && tbody.children.length === 0) {
+                            location.reload();
+                        }
+                    }, 300);
+                }
+            }
+
+            async deletePimpinan(button) {
+                const id = parseInt(button.dataset.id);
+                const name = button.dataset.name;
+
+                if (!id || isNaN(id)) {
+                    this.showAlert('danger', 'ID tidak valid untuk penghapusan');
+                    return;
+                }
+
+                this.currentDeleteId = id;
+                this.currentDeleteName = name;
+
+                document.getElementById('deleteId').value = id;
+                document.getElementById('pimpinanName').textContent = name;
+                this.deleteModal.show();
+            }
+
+            confirmDelete() {
+                const id = document.getElementById('deleteId').value;
+
+                if (!id || isNaN(parseInt(id))) {
+                    this.showAlert('ID tidak valid untuk penghapusan.', 'danger');
+                    return;
+                }
+
+                fetch(`/pimpinan/${id}`, {
+                    method: 'DELETE',
+                })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success) {
+                            document.getElementById(`row-${id}`).remove();
+                            this.showAlert('success', 'Pimpinan berhasil dihapus.');
+                            this.updateRowNumbers();
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                            modal.hide();
+                        } else {
+                            this.showAlert('danger', result.message || 'Gagal menghapus pimpinan.');
+                        }
+                    })
+                    .catch(() => {
+                        this.showAlert('danger', 'Terjadi kesalahan saat menghapus pimpinan.');
+                    });
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            const manager = new PimpinanManager();
+
+            // Make deletePimpinan available globally
+            window.deletePimpinan = function (button) {
+                manager.deletePimpinan(button);
+            };
+
+            // Make confirmDelete available globally
+            window.confirmDelete = function () {
+                manager.confirmDelete();
+            };
+        });
+    </script>
+</div>

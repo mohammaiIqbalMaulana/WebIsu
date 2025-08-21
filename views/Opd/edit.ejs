@@ -1,0 +1,255 @@
+<div class="container mt-4">
+    <h3 class="mb-4">Edit OPD</h3>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <div class="d-flex align-items-center">
+                            <a href="/opd" class="btn btn-dark btn-sm me-3">
+                                <i class="bi bi-arrow-left"></i>
+                            </a>
+                            <h4 class="mb-0">
+                                <i class="bi bi-edit me-2"></i>
+                                <%= title %>
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Error Alert -->
+                        <% if (errors) { %>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <%= errors %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <% } %>
+
+                                <!-- OPD Info -->
+                                <div class="alert alert-info mb-4">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>ID:</strong> #<%= opd.id %>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Form -->
+                                <form action="/opd/<%= opd.id %>?_method=PUT" method="POST" novalidate>
+                                    <input type="hidden" name="_method" value="PUT">
+
+                                    <div class="mb-4">
+                                        <label for="nama_opd" class="form-label fw-bold">
+                                            <i class="bi bi-buildings me-2 text-primary"></i>Nama OPD
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-lg" id="nama_opd"
+                                            name="nama_opd" placeholder="Masukkan nama OPD..."
+                                            value="<%= opd.nama_opd %>" maxlength="255" required>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Maksimal 255 karakter
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Actions -->
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <a href="/opd" class="btn btn-secondary">
+                                            <i class="bi bi-times me-1"></i>Batal
+                                        </a>
+                                        <div>
+                                            <button type="reset" class="btn btn-outline-warning me-2">
+                                                <i class="bi bi-undo me-1"></i>Reset
+                                            </button>
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="bi bi-save me-1"></i>Update OPD
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                    </div>
+
+                    <!-- Card Footer with Info -->
+                    <div class="card-footer bg-light">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Fields bertanda <span class="text-danger">*</span> wajib diisi
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    Diperbarui: <%= new Date(opd.updated_at).toLocaleDateString('id-ID') %>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Store original value for reset functionality
+        const originalValue = '<%= opd.nama_opd %>';
+
+        // Auto focus and select text
+        const namaOpdInput = document.getElementById('nama_opd');
+        namaOpdInput.focus();
+        namaOpdInput.select();
+
+        const form = document.querySelector('form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const resetBtn = form.querySelector('button[type="reset"]');
+
+        // Update submit button state based on changes
+        function updateSubmitButton() {
+            const currentValue = namaOpdInput.value.trim();
+            if (currentValue === originalValue) {
+                submitBtn.disabled = true;
+                resetBtn.disabled = true;
+            } else {
+                submitBtn.disabled = false;
+                resetBtn.disabled = false;
+            }
+            submitBtn.innerHTML = '<i class="bi bi-save me-1"></i>Update OPD';
+        }
+
+        // Show bootstrap alert
+        function showAlert(type, message) {
+            // Remove existing alerts except info
+            document.querySelectorAll('.alert:not(.alert-info)').forEach(alert => alert.remove());
+
+            const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+            const cardBody = document.querySelector('.card-body');
+            const infoAlert = cardBody.querySelector('.alert-info');
+            if (infoAlert) {
+                infoAlert.insertAdjacentHTML('afterend', alertHtml);
+            } else {
+                cardBody.insertAdjacentHTML('afterbegin', alertHtml);
+            }
+
+            // Auto-dismiss after 5s
+            setTimeout(() => {
+                document.querySelectorAll('.alert:not(.alert-info)').forEach(alert => {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                });
+            }, 5000);
+        }
+
+        // Real-time validation
+        namaOpdInput.addEventListener('input', function () {
+            const value = this.value.trim();
+
+            if (value === '') {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else if (value === originalValue) {
+                this.classList.remove('is-invalid', 'is-valid');
+            } else {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+            }
+
+            // Character counter
+            const current = this.value.length;
+            const max = 255;
+            const formText = this.parentElement.querySelector('.form-text');
+            if (current > max * 0.8) {
+                formText.innerHTML = `<i class="bi bi-exclamation-triangle me-1 text-warning"></i>${current}/${max} karakter (${max - current} tersisa)`;
+                formText.className = 'form-text text-warning';
+            } else {
+                formText.innerHTML = `<i class="bi bi-info-circle me-1"></i>Maksimal 255 karakter`;
+                formText.className = 'form-text';
+            }
+
+            updateSubmitButton();
+            hasUnsavedChanges = (value !== originalValue);
+        });
+
+        // Form submit validation
+        form.addEventListener('submit', function (e) {
+            const namaOpd = namaOpdInput.value.trim();
+            namaOpdInput.classList.remove('is-invalid', 'is-valid');
+
+            if (namaOpd === '') {
+                e.preventDefault();
+                namaOpdInput.classList.add('is-invalid');
+                namaOpdInput.focus();
+                if (!document.querySelector('.alert-danger')) {
+                    showAlert('danger', 'Nama OPD tidak boleh kosong');
+                }
+                return false;
+            }
+
+            if (namaOpd === originalValue) {
+                e.preventDefault();
+                showAlert('info', 'Tidak ada perubahan yang disimpan');
+                return false;
+            }
+
+            // Loading state
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-spinner fa-spin me-1"></i>Mengupdate...';
+            submitBtn.disabled = true;
+
+            // Restore if server-side error appears
+            setTimeout(() => {
+                if (document.querySelector('.alert-danger')) {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }, 100);
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            namaOpdInput.value = originalValue;
+            namaOpdInput.classList.remove('is-invalid', 'is-valid');
+            updateSubmitButton();
+            namaOpdInput.focus();
+            hasUnsavedChanges = false;
+        });
+
+        // Warn user about unsaved changes - only if form is dirty
+        let hasUnsavedChanges = false;
+        
+        // Only set hasUnsavedChanges when value actually changes
+        namaOpdInput.addEventListener('input', function () {
+            const currentValue = this.value.trim();
+            hasUnsavedChanges = (currentValue !== originalValue);
+        });
+
+        // Handle form submission to prevent beforeunload
+        form.addEventListener('submit', function () {
+            hasUnsavedChanges = false;
+        });
+
+        // Handle navigation links
+        document.querySelectorAll('a[href]').forEach(link => {
+            link.addEventListener('click', function (e) {
+                if (!hasUnsavedChanges) return;
+                
+                const href = this.getAttribute('href');
+                if (href && !href.startsWith('#') && !href.includes('javascript:')) {
+                    e.preventDefault();
+                    if (confirm('Perubahan Anda mungkin tidak akan disimpan. Lanjutkan?')) {
+                        window.location.href = href;
+                    }
+                }
+            });
+        });
+
+        // Initial state check
+        updateSubmitButton();
+    </script>

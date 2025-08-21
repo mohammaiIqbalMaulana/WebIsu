@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 300px;
+            overflow-y: auto;
+            z-index: 1050;
+            transition: left 0.3s ease, width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            left: -300px;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            padding: 12px 20px;
+            margin: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white !important;
+            transform: translateX(5px);
+            border-left-color: #fff;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white !important;
+            border-left-color: #ffd700;
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 10px;
+        }
+
+        .sidebar .nav-item .dropdown-toggle-custom {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding-right: 120px !important;
+        }
+
+        .sidebar .nav-item .dropdown-toggle-custom i.dropdown-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.3s ease;
+            font-size: 0.5rem;
+            flex-shrink: 0;
+            margin-left: 5px;
+        }
+
+        .sidebar .nav-item .dropdown-toggle-custom[aria-expanded="true"] i.dropdown-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .sidebar .nav-item .collapse {
+            background-color: rgba(0, 0, 0, 0.1);
+            margin: 0 8px;
+            border-radius: 8px;
+            padding: 4px 0;
+        }
+
+        .sidebar .nav-item .collapse .nav-link.submenu-link {
+            padding: 8px 20px 8px 45px;
+            margin: 1px 4px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .sidebar .nav-item .collapse .nav-link.submenu-link:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(3px);
+            color: white !important;
+        }
+
+        .sidebar .nav-item .collapse .nav-link.submenu-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-item .collapse .nav-link.submenu-link i {
+            width: 16px;
+            text-align: center;
+            margin-right: 8px;
+            font-size: 0.85rem;
+        }
+
+        .sidebar .nav-item .dropdown-toggle-custom.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white !important;
+            border-left: 3px solid #ffd700;
+        }
+
+        .main-content {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            margin-left: 300px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+
+        .navbar-custom {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: block !important;
+        }
+
+        .profile-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .profile-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .profile-img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border: 4px solid;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Calendar Modern Styles */
+        .calendar-wrapper {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .filter-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+
+        .calendar-day {
+            min-height: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            padding: 0.3rem;
+            margin: 2px;
+            font-size: .90rem;
+        }
+
+        .calendar-day:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .calendar-day.has-files {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .calendar-day.has-files:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            transform: translateY(-4px);
+        }
+
+        .day-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .file-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .btn-modern {
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success-modern {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-danger-modern {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .month-nav {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 10px;
+            padding: 0.75rem 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .month-nav:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            z-index: 1000;
+        }
+
+        .empty-day {
+            opacity: 0.3;
+            cursor: default !important;
+        }
+
+        .stats-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+                padding: 0.5rem;
+            }
+
+            .day-number {
+                font-size: 1.1rem;
+            }
+
+            .file-list {
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                left: -300px;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+
+            .overlay.show {
+                display: block;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .overlay {
+                display: none !important;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .profile-card .card-body {
+                padding: 1.5rem 1rem;
+            }
+
+            .profile-img {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 0.5rem !important;
+            }
+
+            .profile-img {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        .day-cell {
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .day-cell.selected {
+            outline: 2px solid #0d6efd;
+            background: rgba(13, 110, 253, .1);
+        }
+
+        .day-cell.disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="p-3">
+            <h5 class="navbar-brand mb-4">
+                <i class="bi bi-graph-up me-2"></i> Sistem Laporan
+            </h5>
+
+            <a href="/logout" class="btn btn-outline-danger mb-3">Logout</a>
+            <nav class="nav flex-column">
+                <a class="nav-link <%= currentPage === 'beranda' ? 'active' : '' %>" href="/beranda">
+                    <i class="bi bi-house"></i> Beranda
+                </a>
+                <a class="nav-link <%= currentPage === 'Pimpinan' ? 'active' : '' %>" href="/pimpinan">
+                    <i class="bi bi-person-circle"></i> Pimpinan
+                </a>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-custom highlight-toggle" onclick="toggleHighlightDropdown()"
+                        role="button">
+                        <i class="bi bi-brightness-high"></i> Highlight Isu
+                        <i class="bi bi-chevron-down dropdown-arrow ms-auto"></i>
+                    </a>
+                    <div class="collapse <%= ['monitoring-prioritas', 'monitoring-khusus', 'monitoring-viralitas'].includes(currentPage) ? 'show' : '' %>"
+                        id="highlightSubmenu">
+                        <nav class="nav flex-column">
+                            <a class="nav-link submenu-link <%= currentPage === 'monitoring-prioritas' ? 'active' : '' %>"
+                                href="/highlight/monitoring-prioritas">
+                                <i class="bi bi-exclamation-triangle"></i> Monitoring Prioritas
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'monitoring-khusus' ? 'active' : '' %>"
+                                href="/highlight/monitoring-khusus">
+                                <i class="bi bi-shield-exclamation"></i> Monitoring Khusus
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'monitoring-viralitas' ? 'active' : '' %>"
+                                href="/highlight/monitoring-viralitas">
+                                <i class="bi bi-lightning-fill"></i> Monitoring Viralitas
+                            </a>
+                        </nav>
+                    </div>
+                </div>
+
+                <a class="nav-link <%= currentPage === 'Organisasi Perangkat Daerah' ? 'active' : '' %>" href="/opd">
+                    <i class="bi bi-person-vcard"></i> OPD
+                </a>
+
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-custom laporan-toggle" onclick="toggleLaporanDropdown()"
+                        role="button">
+                        <i class="bi bi-clipboard-data"></i> Laporan Pimpinan
+                        <i class="bi bi-chevron-down dropdown-arrow ms-auto"></i>
+                    </a>
+                    <div class="collapse <%= ['isu-prioritas', 'isu-khusus', 'viralitas'].includes(currentPage) ? 'show' : '' %>"
+                        id="laporanPimpinanSubmenu">
+                        <nav class="nav flex-column">
+                            <a class="nav-link submenu-link <%= currentPage === 'isu-prioritas' ? 'active' : '' %>"
+                                href="/isu-prioritas">
+                                <i class="bi bi-exclamation-triangle"></i> Isu Prioritas
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'isu-khusus' ? 'active' : '' %>"
+                                href="/isu-khusus">
+                                <i class="bi bi-shield-exclamation"></i> Isu Khusus
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'viralitas' ? 'active' : '' %>"
+                                href="/viralitas">
+                                <i class="bi bi-lightning-fill"></i> Isu Viralitas
+                            </a>
+                        </nav>
+                    </div>
+                </div>
+                <a class="nav-link <%= currentPage === 'laporan' ? 'active' : '' %>" href="/laporan">
+                    <i class="bi bi-file-text"></i> Laporan Staff
+                </a>
+            </nav>
+        </div>
+
+        <div class="mt-auto p-3">
+            <div class="d-flex align-items-center">
+                <div class="avatar bg-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                    style="width: 35px; height: 35px;">
+                    <i class="bi bi-person text-primary"></i>
+                </div>
+                <div class="text-white">
+                    <small class="d-block">Admin User</small>
+                    <small class="opacity-75">Online</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="container-fluid">
+                <button class="btn btn-outline-light me-3" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <span class="navbar-brand mb-0 h1">
+                    <%= title %>
+                </span>
+            </div>
+        </nav>
+
+        <div class="p-4">
+            <%- body %>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const mainContent = document.getElementById('mainContent');
+
+        function toggleSidebar() {
+            const isMobile = window.innerWidth <= 991.98;
+            if (isMobile) {
+                if (sidebar.classList.contains('show')) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                    sidebar.style.left = '-300px';
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    sidebar.classList.add('show');
+                    overlay.classList.add('show');
+                }
+            } else {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            }
+        }
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', toggleSidebar);
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function () {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            });
+        }
+
+        document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle-custom)').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 991.98) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                }
+            });
+        });
+
+        document.querySelectorAll('.sidebar .submenu-link').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 991.98) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                }
+            });
+        });
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 991.98) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.classList.remove('expanded');
+            }
+        });
+
+        function toggleLaporanDropdown() {
+            const collapse = document.getElementById('laporanPimpinanSubmenu');
+            const toggle = document.querySelector('.laporan-toggle');
+            collapse.classList.toggle('show');
+            const isExpanded = collapse.classList.contains('show');
+            toggle.setAttribute('aria-expanded', isExpanded);
+        }
+
+        function toggleHighlightDropdown() {
+            const collapse = document.getElementById('highlightSubmenu');
+            const toggle = document.querySelector('.highlight-toggle');
+            collapse.classList.toggle('show');
+            const isExpanded = collapse.classList.contains('show');
+            toggle.setAttribute('aria-expanded', isExpanded);
+        }
+    </script>
+    <%- script %>
+</body>
+
+</html>

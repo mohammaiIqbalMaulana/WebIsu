@@ -1,0 +1,174 @@
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>
+                <%= title %>
+            </h3>
+            <div>
+                <a href="/laporan" class="btn btn-secondary">Kembali</a>
+            </div>
+        </div>
+
+        <!-- Form with enctype for file upload -->
+        <form method="post" action="/laporan/tambah" enctype="multipart/form-data" class="card p-3 shadow-sm">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Jenis Laporan</label>
+                    <select name="jenis_laporan" class="form-select" required>
+                        <% for (const [kode, nama] of Object.entries(JENIS_MAP)) { %>
+                            <option value="<%= kode %>">
+                                <%= nama %>
+                            </option>
+                        <% } %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Pimpinan</label>
+                    <select name="id_pimpinan" class="form-select" required>
+                        <option value="">-- Pilih --</option>
+                        <% pimpinan.forEach(p=> { %>
+                            <option value="<%= p.id_pimpinan %>">
+                                <%= p.jabatan_pimpinan %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Jenis Media</label>
+                    <select name="id_jenis" class="form-select" required>
+                        <option value="">-- Pilih --</option>
+                        <% jenis.forEach(j=> { %>
+                            <option value="<%= j.id_jenis %>">
+                                <%= j.nama_jenis %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tanggal</label>
+                    <input type="date" name="tanggal_laporan" class="form-control" required>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label">Judul</label>
+                    <input type="text" name="judul" class="form-control" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Uraian / Isi Laporan</label>
+                    <div id="editor-container">
+                        <div id="editor"></div>
+                    </div>
+                    <!-- Hidden textarea for form submission -->
+                    <textarea name="isi_laporan" id="isi_laporan_hidden" style="display: none;"></textarea>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle"></i> 
+                        Gunakan toolbar di atas untuk memformat teks dengan <strong>bold</strong>, <em>italic</em>, membuat link, dan lainnya.
+                    </div>
+                </div>
+
+                <!-- FILE UPLOAD - EXISTING -->
+                <div class="col-12">
+                    <label class="form-label">Upload File <small class="text-muted">(opsional)</small></label>
+                    <input type="file" name="file_upload" class="form-control" accept="*/*">
+                    <div class="form-text">
+                        <i class="bi bi-info-circle"></i> 
+                        Semua jenis file diperbolehkan. File akan otomatis tersimpan bersama laporan.
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- CKEditor 5 Style & Script -->
+    <style>
+        .ck-editor__editable {
+            min-height: 200px;
+        }
+        
+        .ck.ck-editor {
+            margin-bottom: 1rem;
+        }
+        
+        .ck-content {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .ck.ck-toolbar {
+            border-top: 1px solid #c4c4c4;
+            border-left: 1px solid #c4c4c4;
+            border-right: 1px solid #c4c4c4;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .ck.ck-editor__main > .ck-editor__editable {
+            border-left: 1px solid #c4c4c4;
+            border-right: 1px solid #c4c4c4;
+            border-bottom: 1px solid #c4c4c4;
+            border-radius: 0 0 4px 4px;
+        }
+    </style>
+
+    <!-- CKEditor 5 CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ckeditor5/39.0.1/ckeditor.min.js"></script>
+    
+    <script>
+        // Initialize CKEditor 5
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
+                toolbar: [
+                    'heading', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', '|',
+                    'link', 'bulletedList', 'numberedList', '|',
+                    'outdent', 'indent', '|',
+                    'blockQuote', 'insertTable', '|',
+                    'undo', 'redo'
+                ],
+                heading: {
+                    options: [
+                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
+                    ]
+                },
+                link: {
+                    decorators: {
+                        openInNewTab: {
+                            mode: 'manual',
+                            label: 'Open in a new tab',
+                            attributes: {
+                                target: '_blank',
+                                rel: 'noopener noreferrer'
+                            }
+                        }
+                    }
+                },
+                table: {
+                    contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                }
+            })
+            .then(editor => {
+                window.editor = editor;
+
+                // Update hidden textarea on form submission
+                document.querySelector('form').addEventListener('submit', function(e) {
+                    document.getElementById('isi_laporan_hidden').value = editor.getData();
+                });
+
+                // Optional: Real-time sync with hidden field
+                editor.model.document.on('change:data', () => {
+                    document.getElementById('isi_laporan_hidden').value = editor.getData();
+                });
+            })
+            .catch(error => {
+                console.error('CKEditor initialization error:', error);
+            });
+    </script>
+</body>

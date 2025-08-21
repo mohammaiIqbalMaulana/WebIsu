@@ -1,0 +1,33 @@
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-5 text-center">
+                <div class="mb-4">
+                    <i class="bi bi-house text-primary"></i>
+                </div>
+                <h1 class="mb-3">Selamat Datang, <%= user.username %>!</h1>
+                <p class="lead text-muted mb-4">
+                    di Sistem Informasi Laporan Analis
+                </p>
+                <p class="text-muted">
+                    Gunakan menu navigasi di samping untuk mengakses fitur-fitur yang tersedia.
+                </p>
+                
+                <div class="row mt-5">
+                    <div class="col-md-6 mb-3">
+                        <a href="/pimpinan" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="bi bi-people"></i>
+                            Kelola Pimpinan
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="/laporan" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-file-text me-2"></i>
+                            Kelola Laporan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

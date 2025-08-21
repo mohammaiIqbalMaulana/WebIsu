@@ -1,0 +1,456 @@
+<div class="container my-4">
+  <h1 class="mb-4">Monitoring Isu Khusus</h1>
+
+  <!-- Filter Panel -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">Filter Data</h5>
+    </div>
+    <div class="card-body">
+      <form method="GET" action="/highlight/monitoring-khusus" id="filterForm">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label for="tanggal_dari" class="form-label">Tanggal Dari</label>
+            <input type="date" class="form-control" id="tanggal_dari" name="tanggal_dari" 
+                   value="<%= filters.tanggal_dari || '' %>">
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="tanggal_sampai" class="form-label">Tanggal Sampai</label>
+            <input type="date" class="form-control" id="tanggal_sampai" name="tanggal_sampai" 
+                   value="<%= filters.tanggal_sampai || '' %>">
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="stakeholder" class="form-label">Stakeholder (OPD)</label>
+            <select class="form-select" id="stakeholder" name="stakeholder">
+              <option value="">Semua Stakeholder</option>
+              <% opdData.forEach(opd => { %>
+                <option value="<%= opd.id %>" <%= filters.stakeholder == opd.id ? 'selected' : '' %>>
+                  <%= opd.nama_opd %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label for="kewenangan" class="form-label">Kewenangan</label>
+            <input type="text" class="form-control" id="kewenangan" name="kewenangan" 
+                   placeholder="Cari kewenangan..." value="<%= filters.kewenangan || '' %>">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="search" class="form-label">Pencarian</label>
+            <input type="text" class="form-control" id="search" name="search" 
+                   placeholder="Cari judul atau isi laporan..." value="<%= filters.search || '' %>">
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filter
+              </button>
+              <a href="/highlight/monitoring-khusus" class="btn btn-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Active Filters Display -->
+  <% if (filters.tanggal_dari || filters.tanggal_sampai || filters.stakeholder || filters.kewenangan || filters.search) { %>
+  <div class="mb-3">
+    <span class="badge bg-info me-2">Filter Aktif:</span>
+    <% if (filters.tanggal_dari || filters.tanggal_sampai) { %>
+      <span class="badge bg-secondary me-1">Tanggal: <%= filters.tanggal_dari || '' %> - <%= filters.tanggal_sampai || '' %></span>
+    <% } %>
+    <% if (filters.stakeholder) { %>
+      <span class="badge bg-secondary me-1">Stakeholder: <%= opdData.find(o => o.id == filters.stakeholder)?.nama_opd || filters.stakeholder %></span>
+    <% } %>
+    <% if (filters.kewenangan) { %>
+      <span class="badge bg-secondary me-1">Kewenangan: <%= filters.kewenangan %></span>
+    <% } %>
+    <% if (filters.search) { %>
+      <span class="badge bg-secondary me-1">Pencarian: <%= filters.search %></span>
+    <% } %>
+  </div>
+  <% } %>
+
+  <!-- Results Info -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">
+      Menampilkan <%= laporanKecil.length + (highlight ? 1 : 0) %> dari <%= pagination.totalData %> data
+    </p>
+    <% if (pagination.totalPages > 1) { %>
+    <p class="text-muted mb-0">
+      Halaman <%= pagination.currentPage %> dari <%= pagination.totalPages %>
+    </p>
+    <% } %>
+  </div>
+
+  <!-- Highlight Card -->
+  <% if (highlight) { %>
+  <div class="card mb-4 shadow-lg border-primary">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">
+        <i class="bi bi-display"></i> Highlight - Isu Terbaru
+      </h4>
+    </div>
+    <div class="row g-0">
+      <div class="col-md-6">
+        <div id="carouselHighlight" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">
+            <% if (highlight.files && highlight.files.length > 0) { %>
+              <% highlight.files.forEach((file, idx) => { %>
+                <div class="carousel-item <%= idx === 0 ? 'active' : '' %>">
+                  <% if (file && (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mov') || file.endsWith('.avi') || file.endsWith('.mkv'))) { %>
+                    <div class="video-container" style="height: 300px; background-color: #f8f9fa; position: relative;">
+                      <video class="d-block w-100 h-100" controls preload="metadata" 
+                             onerror="handleVideoError(this)" 
+                             style="object-fit: contain;">
+                        <source src="<%= file %>" type="<%= file.endsWith('.mp4') ? 'video/mp4' : file.endsWith('.webm') ? 'video/webm' : file.endsWith('.mov') ? 'video/quicktime' : 'video/mp4' %>">
+                        Your browser does not support the video tag.
+                      </video>
+                      <div class="video-error-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); color: white; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <i class="bi bi-camera-video mb-2"></i>
+                        <p>Video tidak dapat diputar</p>
+                        <a href="<%= file %>" class="btn btn-sm btn-primary" download>Download Video</a>
+                      </div>
+                    </div>
+                  <% } else if (file) { %>
+                    <img src="<%= file %>" class="d-block w-100" style="height: 300px; object-fit: contain; background-color: #f8f9fa;" alt="gambar" onerror="handleImageError(this)">
+                  <% } else { %>
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                      <i class="bi bi-card-image text-muted"></i>
+                    </div>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="carousel-item active">
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                  <i class="bi bi-card-image text-muted"></i>
+                </div>
+              </div>
+            <% } %>
+          </div>
+          <% if (highlight.files && highlight.files.length > 1) { %>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselHighlight" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselHighlight" data-bs-slide="next">
+              <span class="carousel-control-next-icon"></span>
+            </button>
+          <% } %>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card-body">
+          <h3 class="card-title"><%= highlight.judul %></h3>
+          <div class="mb-2">
+            <span class="badge bg-primary"><%= highlight.tanggal_formatted %></span>
+            <% if (highlight.stakeholder_names_array && highlight.stakeholder_names_array.length > 0) { %>
+              <% highlight.stakeholder_names_array.forEach(name => { %>
+                <span class="badge bg-info me-1"><%= name %></span>
+              <% }) %>
+            <% } %>
+            <% if (highlight.kewenangan_array && highlight.kewenangan_array.length > 0) { %>
+              <% highlight.kewenangan_array.forEach(kew => { %>
+                <span class="badge bg-warning text-dark me-1"><%= kew %></span>
+              <% }) %>
+            <% } %>
+          </div>
+          <div class="card-text">
+            <button class="btn btn-primary btn-sm" onclick="showDetailModal('<%= highlight.id %>')">
+              <i class="bi bi-eye"></i> Lihat Uraian
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Small Cards Grid -->
+  <% if (laporanKecil.length > 0) { %>
+  <div class="row">
+    <% laporanKecil.forEach((laporan, i) => { %>
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100 shadow-sm">
+          <div class="position-relative">
+            <div id="carousel<%= i %>" class="carousel slide" data-bs-ride="carousel">
+              <div class="carousel-inner">
+                <% if (laporan.files && laporan.files.length > 0) { %>
+                  <% laporan.files.forEach((file, idx) => { %>
+                    <div class="carousel-item <%= idx === 0 ? 'active' : '' %>">
+                      <% if (file.endsWith('.mp4') || file.endsWith('.webm') || file.endsWith('.mov') || file.endsWith('.avi') || file.endsWith('.mkv')) { %>
+                        <video class="d-block w-100" style="height: 200px; object-fit: contain;" controls preload="metadata">
+                          <source src="<%= file %>" type="<%= file.endsWith('.mp4') ? 'video/mp4' : file.endsWith('.webm') ? 'video/webm' : file.endsWith('.mov') ? 'video/quicktime' : 'video/mp4' %>">
+                          Your browser does not support the video tag.
+                        </video>
+                      <% } else { %>
+                        <img src="<%= file %>" class="d-block w-100" style="height: 200px; object-fit: contain;" alt="gambar" onerror="this.onerror=null;this.src='/images/placeholder.jpg';">
+                      <% } %>
+                    </div>
+                  <% }) %>
+                <% } else { %>
+                  <div class="carousel-item active">
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                      <i class="bi bi-card-image text-muted"></i>
+                    </div>
+                  </div>
+                <% } %>
+              </div>
+              <% if (laporan.files && laporan.files.length > 1) { %>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carousel<%= i %>" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carousel<%= i %>" data-bs-slide="next">
+                  <span class="carousel-control-next-icon"></span>
+                </button>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <h5 class="card-title"><%= laporan.judul %></h5>
+            <div class="mb-2">
+              <small class="text-muted">
+                <i class="bi bi-calendar"></i> <%= laporan.tanggal_formatted %>
+              </small>
+            </div>
+            <div class="mb-2">
+              <% if (laporan.stakeholder_names_array && laporan.stakeholder_names_array.length > 0) { %>
+                <% laporan.stakeholder_names_array.slice(0, 2).forEach(name => { %>
+                  <span class="badge bg-info me-1"><%= name %></span>
+                <% }) %>
+                <% if (laporan.stakeholder_names_array.length > 2) { %>
+                  <span class="badge bg-secondary">+<%= laporan.stakeholder_names_array.length - 2 %> lainnya</span>
+                <% } %>
+              <% } %>
+            </div>
+            <div class="mb-2">
+              <% if (laporan.kewenangan_array && laporan.kewenangan_array.length > 0) { %>
+                <% laporan.kewenangan_array.slice(0, 2).forEach(kew => { %>
+                  <span class="badge bg-warning text-dark me-1"><%= kew %></span>
+                <% }) %>
+                <% if (laporan.kewenangan_array.length > 2) { %>
+                  <span class="badge bg-secondary">+<%= laporan.kewenangan_array.length - 2 %> lainnya</span>
+                <% } %>
+              <% } %>
+            </div>
+            <p class="card-text">
+              <button class="btn btn-primary btn-sm" onclick="showDetailModal('<%= laporan.id %>')">
+                <i class="bi bi-eye"></i> Lihat Uraian
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+  <% } else if (!highlight) { %>
+  <div class="text-center py-5">
+    <i class="bi bi-search text-muted mb-3"></i>
+    <h4>Tidak ada data yang ditemukan</h4>
+    <p class="text-muted">Coba ubah filter pencarian Anda</p>
+  </div>
+  <% } %>
+
+  <!-- Pagination -->
+  <% if (pagination.totalPages > 1) { %>
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+      <% if (pagination.hasPrev) { %>
+        <li class="page-item">
+          <a class="page-link" href="?page=<%= pagination.prevPage %>&<%= new URLSearchParams(filters).toString() %>">
+            <i class="bi bi-chevron-left"></i> Sebelumnya
+          </a>
+        </li>
+      <% } %>
+      
+      <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+        <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+          <a class="page-link" href="?page=<%= i %>&<%= new URLSearchParams(filters).toString() %>">
+            <%= i %>
+          </a>
+        </li>
+      <% } %>
+      
+      <% if (pagination.hasNext) { %>
+        <li class="page-item">
+          <a class="page-link" href="?page=<%= pagination.nextPage %>&<%= new URLSearchParams(filters).toString() %>">
+            Selanjutnya <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+      <% } %>
+    </ul>
+  </nav>
+  <% } %>
+
+</div>
+
+  <!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailModalLabel">Detail Uraian</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <div class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Memuat detail laporan...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS -->
+<style>
+  .card {
+    transition: transform 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+  }
+  .carousel-control-prev-icon,
+  .carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+  }
+  .badge {
+    font-size: 0.75em;
+  }
+  
+  .ck-content {
+    line-height: 1.6;
+  }
+  
+  .ck-content p {
+    margin-bottom: 1rem;
+  }
+  
+  .ck-content ul, .ck-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+
+  /* Modal styling */
+  .modal-body img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .modal-body video {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+
+<script>
+// Auto-submit form on date change
+document.getElementById('tanggal_dari')?.addEventListener('change', function() {
+  if (document.getElementById('tanggal_sampai').value) {
+    document.getElementById('filterForm').submit();
+  }
+});
+
+document.getElementById('tanggal_sampai')?.addEventListener('change', function() {
+  if (document.getElementById('tanggal_dari').value) {
+    document.getElementById('filterForm').submit();
+  }
+});
+
+// Detail modal functionality
+function showDetailModal(laporanId) {
+  
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  modal.show();
+  
+  fetch(`/highlight/laporan-detail/${laporanId}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        const laporan = data.data;
+        
+        let modalContent = '<div class="row">';
+        
+        // Hanya tampilkan uraian
+        modalContent += '<div class="col-12">';
+        modalContent += `
+          <div class="ck-content border rounded p-4" style="max-height: 70vh; overflow-y: auto;">
+            ${laporan.isi_laporan}
+          </div>`;
+        modalContent += '</div></div>';
+        
+        document.getElementById('modalBody').innerHTML = modalContent;
+        
+        const modalCarousel = document.getElementById('modalCarousel');
+        if (modalCarousel) {
+          new bootstrap.Carousel(modalCarousel);
+        }
+      } else {
+        document.getElementById('modalBody').innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> Gagal memuat detail laporan: ${data.message || 'Unknown error'}
+          </div>`;
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('modalBody').innerHTML = `
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-triangle"></i> Terjadi kesalahan saat memuat detail: ${error.message}
+        </div>`;
+    });
+}
+
+// Handle modal hidden event
+document.getElementById('detailModal').addEventListener('hidden.bs.modal', function () {
+  document.getElementById('modalBody').innerHTML = `
+    <div class="text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Memuat detail laporan...</p>
+    </div>`;
+});
+
+// Error handling functions
+function handleVideoError(videoElement) {
+  console.error('Video error:', videoElement.error);
+  const container = videoElement.parentElement;
+  const errorOverlay = container.querySelector('.video-error-overlay');
+  if (errorOverlay) {
+    errorOverlay.style.display = 'flex';
+  }
+}
+
+function handleImageError(imgElement) {
+  console.error('Image error:', imgElement.src);
+  imgElement.src = '/images/placeholder.jpg';
+}
+
+// Initialize video error handling
+document.addEventListener('DOMContentLoaded', function() {
+  const videos = document.querySelectorAll('video');
+  videos.forEach(video => {
+    video.addEventListener('error', function() {
+      handleVideoError(this);
+    });
+  });
+});
+</script>
