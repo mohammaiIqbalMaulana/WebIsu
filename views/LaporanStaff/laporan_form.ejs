@@ -24,9 +24,9 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Pimpinan</label>
-                    <select name="id_pimpinan" class="form-select" required>
-                        <option value="">-- Pilih --</option>
+                    <label class="form-label">Pimpinan <small class="text-muted">(opsional)</small></label>
+                    <select name="id_pimpinan" class="form-select">
+                        <option value="">-- Pilih Pimpinan --</option>
                         <% pimpinan.forEach(p=> { %>
                             <option value="<%= p.id_pimpinan %>">
                                 <%= p.jabatan_pimpinan %>
@@ -36,9 +36,9 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Jenis Media</label>
+                    <label class="form-label">Jenis Media <small class="text-muted">(opsional)</small></label>
                     <select name="id_jenis" class="form-select">
-                        <option value="">-- Pilih --</option>
+                        <option value="">-- Pilih Jenis Media --</option>
                         <% jenis.forEach(j=> { %>
                             <option value="<%= j.id_jenis %>">
                                 <%= j.nama_jenis %>
@@ -49,7 +49,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Tanggal</label>
-                    <input type="date" name="tanggal_laporan" class="form-control" required>
+                    <input type="date" name="tanggal_laporan" class="form-control">
                 </div>
 
                 <div class="col-md-8">

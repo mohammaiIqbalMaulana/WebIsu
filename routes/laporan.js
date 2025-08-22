@@ -48,13 +48,31 @@ function formatDateForInput(dateValue) {
     return `${year}-${month}-${day}`;
 }
 
-// ========== UPDATED MULTER CONFIGURATION ==========
+// ========== MULTER CONFIGURATION ==========
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // Get form data to determine path
         const { jenis_laporan, id_pimpinan, tanggal_laporan } = req.body;
 
-        // Get pimpinan name
+        // UBAH BAGIAN INI - Handle ketika pimpinan kosong
+        if (!id_pimpinan) {
+            // Gunakan folder default ketika pimpinan tidak dipilih
+            const jenisFolder = JENIS_MAP[jenis_laporan] || 'Unknown';
+            const date = tanggal_laporan ? new Date(tanggal_laporan) : new Date();
+            const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const fullDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+            const fullPath = path.join(__dirname, `../public/uploads/laporan/${jenisFolder}/No-Pimpinan/${yearMonth}/${fullDate}`);
+
+            // Create directory if not exists
+            if (!fs.existsSync(fullPath)) {
+                fs.mkdirSync(fullPath, { recursive: true });
+            }
+
+            return cb(null, fullPath);
+        }
+
+        // Get pimpinan name (hanya jika id_pimpinan ada)
         const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
 
         db.query(qPimpinan, [id_pimpinan], (err, rows) => {
@@ -115,97 +133,91 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
     db.query(qPimpinan, [id_pimpinan], (err, rows) => {
         if (err || !rows.length) return res.status(500).send('Pimpinan tidak ditemukan.');
 
-        const pimpinanName = rows[0].jabatan_pimpinan;
         const jenisFolder = JENIS_MAP[jenis_laporan] || 'Unknown';
-        const pimpinanFolder = sanitizeFileName(pimpinanName);
 
-        const baseMonthPath = path.join(
-            __dirname,
-            `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${year}-${month}`
-        );
+        if (!id_pimpinan || id_pimpinan === '') {
+            // Path untuk laporan tanpa pimpinan
+            const pimpinanFolder = 'No-Pimpinan';
+            const baseMonthPath = path.join(
+                __dirname,
+                `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${year}-${month}`
+            );
 
-        const archive = archiver('zip', { zlib: { level: 9 } });
-        let zipFileName = '';
-        let anyAdded = false;
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            let zipFileName = '';
 
-        res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Type', 'application/zip');
 
-        // MODE: rentang tanggal
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
+            // MODE: rentang tanggal
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
 
-            if (isNaN(start) || isNaN(end)) {
-                return res.status(400).send('Format tanggal tidak valid.');
-            }
-            if (end < start) {
-                return res.status(400).send('Tanggal akhir tidak boleh lebih kecil dari tanggal awal.');
-            }
-
-            zipFileName = `${jenisFolder}_${pimpinanFolder}_${start.toISOString().slice(0, 10)}_sampai_${end.toISOString().slice(0, 10)}.zip`;
-            res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-            archive.pipe(res);
-
-            let anyAdded = false;
-            let cur = new Date(start);
-
-            while (cur <= end) {
-                const y = cur.getFullYear();
-                const m = String(cur.getMonth() + 1).padStart(2, '0');
-                const d = String(cur.getDate()).padStart(2, '0');
-                const fullDate = `${y}-${m}-${d}`;
-
-                const monthPath = path.join(
-                    __dirname,
-                    `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${y}-${m}`
-                );
-                const dayDir = path.join(monthPath, fullDate);
-
-                if (fs.existsSync(dayDir)) {
-                    archive.directory(dayDir, fullDate);
-                    anyAdded = true;
+                if (isNaN(start) || isNaN(end)) {
+                    return res.status(400).send('Format tanggal tidak valid.');
+                }
+                if (end < start) {
+                    return res.status(400).send('Tanggal akhir tidak boleh lebih kecil dari tanggal awal.');
                 }
 
-                cur.setDate(cur.getDate() + 1); // next day
+                zipFileName = `${jenisFolder}_${pimpinanFolder}_${start.toISOString().slice(0, 10)}_sampai_${end.toISOString().slice(0, 10)}.zip`;
+                res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+                archive.pipe(res);
+
+                let anyAdded = false;
+                let cur = new Date(start);
+
+                while (cur <= end) {
+                    const y = cur.getFullYear();
+                    const m = String(cur.getMonth() + 1).padStart(2, '0');
+                    const d = String(cur.getDate()).padStart(2, '0');
+                    const fullDate = `${y}-${m}-${d}`;
+
+                    const monthPath = path.join(
+                        __dirname,
+                        `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${y}-${m}`
+                    );
+                    const dayDir = path.join(monthPath, fullDate);
+
+                    if (fs.existsSync(dayDir)) {
+                        archive.directory(dayDir, fullDate);
+                        anyAdded = true;
+                    }
+
+                    cur.setDate(cur.getDate() + 1); // next day
+                }
+
+                if (!anyAdded) return res.status(404).send('Tidak ada file pada periode tersebut.');
+                archive.finalize();
+                archive.on('error', err => {
+                    console.error('Archive error:', err);
+                    res.status(500).send('Gagal membuat ZIP file.');
+                });
+                return;
             }
 
-            if (!anyAdded) return res.status(404).send('Tidak ada file pada periode tersebut.');
-            archive.finalize();
-            archive.on('error', err => {
-                console.error('Archive error:', err);
-                res.status(500).send('Gagal membuat ZIP file.');
-            });
-            return;
-        }
+            // MODE: per-hari
+            if (day) {
+                const fullDate = `${year}-${month}-${day}`;
+                const targetPath = path.join(baseMonthPath, fullDate);
+                if (!fs.existsSync(targetPath)) return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
+                zipFileName = `${jenisFolder}_${pimpinanFolder}_${fullDate}.zip`;
+                res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+                archive.pipe(res);
+                archive.directory(targetPath, false);
+                archive.finalize();
+                return;
+            }
 
-        // MODE: per-hari
-        if (day) {
-            const fullDate = `${year}-${month}-${day}`;
-            const targetPath = path.join(baseMonthPath, fullDate);
-            if (!fs.existsSync(targetPath)) return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
-            zipFileName = `${jenisFolder}_${pimpinanFolder}_${fullDate}.zip`;
+            // MODE: per-bulan
+            if (!fs.existsSync(baseMonthPath)) return res.status(404).send('Tidak ada file untuk bulan tersebut.');
+            zipFileName = `${jenisFolder}_${pimpinanFolder}_${year}-${month}.zip`;
             res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
             archive.pipe(res);
-            archive.directory(targetPath, false);
+            archive.directory(baseMonthPath, false);
             archive.finalize();
-            archive.on('error', err => {
-                console.error('Archive error:', err);
-                res.status(500).send('Gagal membuat ZIP file.');
-            });
             return;
         }
-
-        // MODE: per-bulan
-        if (!fs.existsSync(baseMonthPath)) return res.status(404).send('Tidak ada file untuk bulan tersebut.');
-        zipFileName = `${jenisFolder}_${pimpinanFolder}_${year}-${month}.zip`;
-        res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-        archive.pipe(res);
-        archive.directory(baseMonthPath, false);
-        archive.finalize();
-        archive.on('error', err => {
-            console.error('Archive error:', err);
-            res.status(500).send('Gagal membuat ZIP file.');
-        });
     });
 });
 
@@ -214,11 +226,56 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
 router.get('/laporan/api/calendar-data', isAuthenticated, (req, res) => {
     const { jenis_laporan, id_pimpinan, year, month } = req.query;
 
-    if (!jenis_laporan || !id_pimpinan || !year || !month) {
+    if (!jenis_laporan || !year || !month) {
         return res.json({ dates: [] });
     }
 
-    // Get pimpinan name
+    // UBAH BAGIAN INI - Handle ketika pimpinan kosong
+    if (!id_pimpinan || id_pimpinan === '') {
+        // Path untuk laporan tanpa pimpinan
+        const jenisFolder = JENIS_MAP[jenis_laporan] || 'Unknown';
+        const monthPath = path.join(__dirname, `../public/uploads/laporan/${jenisFolder}/No-Pimpinan/${year}-${month}`);
+
+        if (!fs.existsSync(monthPath)) {
+            return res.json({ dates: [] });
+        }
+
+        // Read dates in month
+        const dates = [];
+        const items = fs.readdirSync(monthPath);
+
+        items.forEach(item => {
+            const itemPath = path.join(monthPath, item);
+            if (fs.statSync(itemPath).isDirectory()) {
+                // Check if it's a valid date format (YYYY-MM-DD)
+                const dateMatch = item.match(/^\d{4}-\d{2}-(\d{2})$/);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1]);
+
+                    // Count files in this date
+                    const files = fs.readdirSync(itemPath).filter(f =>
+                        fs.statSync(path.join(itemPath, f)).isFile()
+                    );
+
+                    if (files.length > 0) {
+                        dates.push({
+                            day: day,
+                            fileCount: files.length,
+                            files: files.map(f => ({
+                                name: f,
+                                path: `uploads/laporan/${jenisFolder}/No-Pimpinan/${year}-${month}/${item}/${f}`
+                            }))
+                        });
+                    }
+                }
+            }
+        });
+
+        dates.sort((a, b) => a.day - b.day);
+        return res.json({ dates });
+    }
+
+    // Existing code untuk ketika ada pimpinan (TIDAK BERUBAH)
     const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
 
     db.query(qPimpinan, [id_pimpinan], (err, rows) => {
@@ -531,9 +588,9 @@ router.post('/laporan/tambah', isAuthenticated, upload.single('file_upload'), (r
     `;
     const params = [
         Number(jenis_laporan),
-        Number(id_pimpinan),
-        Number(id_jenis),
-        tanggal_laporan,
+        id_pimpinan ? Number(id_pimpinan) : null,
+        id_jenis ? Number(id_jenis) : null,
+        tanggal_laporan || null,
         judul,
         isi_laporan || null,
         file_name,
@@ -671,9 +728,9 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
         const lama = rows[0];
         const baru = {
             jenis_laporan: Number(jenis_laporan),
-            id_pimpinan: Number(id_pimpinan),
-            id_jenis: Number(id_jenis),
-            tanggal_laporan,
+            id_pimpinan: id_pimpinan ? Number(id_pimpinan) : null,
+            id_jenis: id_jenis ? Number(id_jenis) : null,
+            tanggal_laporan: tanggal_laporan || null,
             judul,
             isi_laporan: isi_laporan || null
         };
@@ -685,15 +742,26 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
             formatDateForInput(lama.tanggal_laporan) !== baru.tanggal_laporan
         );
 
-        // Get new pimpinan name for path calculation
-        const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
-
-        db.query(qPimpinan, [baru.id_pimpinan], (errPimpinan, pimpinanRows) => {
-            if (errPimpinan || !pimpinanRows.length) {
-                return res.status(500).send('Pimpinan baru tidak ditemukan.');
+        // Handle ketika pimpinan baru kosong
+        function getPimpinanNameAndContinue() {
+            if (!baru.id_pimpinan) {
+                // Pimpinan kosong, gunakan "No-Pimpinan"
+                continueWithPimpinanName('No-Pimpinan');
+                return;
             }
 
-            const newPimpinanName = pimpinanRows[0].jabatan_pimpinan;
+            // Ada pimpinan, query database
+            const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
+            db.query(qPimpinan, [baru.id_pimpinan], (errPimpinan, pimpinanRows) => {
+                if (errPimpinan || !pimpinanRows.length) {
+                    return res.status(500).send('Pimpinan baru tidak ditemukan.');
+                }
+                const newPimpinanName = pimpinanRows[0].jabatan_pimpinan;
+                continueWithPimpinanName(newPimpinanName);
+            });
+        }
+
+        function continueWithPimpinanName(newPimpinanName) {
             let fileFields = '';
             let fileParams = [];
             let oldFilePath = null;
@@ -705,7 +773,19 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
                     oldFilePath = path.join(__dirname, '../public/', lama.file_path);
                 }
 
-                const { relativePath } = getUploadPath(baru.jenis_laporan, newPimpinanName, baru.tanggal_laporan);
+                // Handle path untuk no-pimpinan
+                let relativePath;
+                if (newPimpinanName === 'No-Pimpinan') {
+                    const jenisFolder = JENIS_MAP[baru.jenis_laporan] || 'Unknown';
+                    const date = baru.tanggal_laporan ? new Date(baru.tanggal_laporan) : new Date();
+                    const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const fullDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    relativePath = `uploads/laporan/${jenisFolder}/No-Pimpinan/${yearMonth}/${fullDate}`;
+                } else {
+                    const pathResult = getUploadPath(baru.jenis_laporan, newPimpinanName, baru.tanggal_laporan);
+                    relativePath = pathResult.relativePath;
+                }
+
                 fileFields = ', file_name = ?, file_path = ?, file_size = ?';
                 fileParams = [
                     req.file.originalname,
@@ -713,10 +793,10 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
                     req.file.size
                 ];
             } else if (needFileMove && lama.file_path) {
-                // 1) cari file lama berdasarkan DB path
+                // File perlu dipindah karena pimpinan/tanggal berubah
                 let oldFileFullPath = path.join(__dirname, '../public/', lama.file_path);
 
-                // 2) kalau tidak ketemu (mis. 'temp'), coba cari di semua pimpinan folder
+                // Cari file lama jika path di DB tidak valid
                 if (!fs.existsSync(oldFileFullPath)) {
                     const jenisFolderLama = JENIS_MAP[lama.jenis_laporan] || 'Unknown';
                     const dateObj = new Date(lama.tanggal_laporan);
@@ -730,10 +810,16 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
                     if (filenameStored) {
                         const baseDir = path.join(__dirname, '../public/uploads/laporan/', jenisFolderLama);
                         try {
+                            // Cari di semua folder pimpinan termasuk No-Pimpinan
+                            const searchDirs = ['No-Pimpinan'];
                             const pimpinanDirs = fs.readdirSync(baseDir, { withFileTypes: true })
-                                .filter(ent => ent.isDirectory()).map(ent => ent.name);
+                                .filter(ent => ent.isDirectory())
+                                .map(ent => ent.name)
+                                .filter(name => name !== 'No-Pimpinan');
+                            
+                            searchDirs.push(...pimpinanDirs);
 
-                            for (const pimpinanFolder of pimpinanDirs) {
+                            for (const pimpinanFolder of searchDirs) {
                                 const candidate = path.join(baseDir, pimpinanFolder, yearMonth, fullDate, filenameStored);
                                 if (fs.existsSync(candidate)) {
                                     oldFileFullPath = candidate;
@@ -741,29 +827,43 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
                                 }
                             }
                         } catch (e) {
-                            // abaikan: fallback pencarian
+                            // Ignore search errors
                         }
                     }
                 }
 
-                // 3) kalau ketemu, pindahkan ke lokasi baru
+                // Pindahkan file ke lokasi baru
                 if (fs.existsSync(oldFileFullPath)) {
-                    const { relativePath, fullPath } = getUploadPath(baru.jenis_laporan, newPimpinanName, baru.tanggal_laporan);
-                    if (!fs.existsSync(fullPath)) {
-                        fs.mkdirSync(fullPath, { recursive: true });
+                    let newPath, newRelativePath;
+                    
+                    if (newPimpinanName === 'No-Pimpinan') {
+                        const jenisFolder = JENIS_MAP[baru.jenis_laporan] || 'Unknown';
+                        const date = baru.tanggal_laporan ? new Date(baru.tanggal_laporan) : new Date();
+                        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        const fullDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        
+                        newPath = path.join(__dirname, `../public/uploads/laporan/${jenisFolder}/No-Pimpinan/${yearMonth}/${fullDate}`);
+                        newRelativePath = `uploads/laporan/${jenisFolder}/No-Pimpinan/${yearMonth}/${fullDate}`;
+                    } else {
+                        const { relativePath, fullPath } = getUploadPath(baru.jenis_laporan, newPimpinanName, baru.tanggal_laporan);
+                        newPath = fullPath;
+                        newRelativePath = relativePath;
                     }
 
-                    // pakai nama file tersimpan yang sama (stabil)
+                    if (!fs.existsSync(newPath)) {
+                        fs.mkdirSync(newPath, { recursive: true });
+                    }
+
                     const storedName = path.basename(oldFileFullPath);
-                    const newFileFullPath = path.join(fullPath, storedName);
-                    const newRelativePath = `${relativePath}/${storedName}`;
+                    const newFileFullPath = path.join(newPath, storedName);
+                    const finalRelativePath = `${newRelativePath}/${storedName}`;
 
                     try {
                         fs.renameSync(oldFileFullPath, newFileFullPath);
                         fileFields = ', file_path = ?';
-                        fileParams = [newRelativePath];
+                        fileParams = [finalRelativePath];
 
-                        // optional: bersihkan folder lama jika kosong
+                        // Cleanup empty old directory
                         try {
                             const parent = path.dirname(oldFileFullPath);
                             if (fs.existsSync(parent) && fs.readdirSync(parent).length === 0) {
@@ -811,9 +911,9 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
             `;
             const params = [
                 baru.jenis_laporan,
-                baru.id_pimpinan,
-                baru.id_jenis,
-                baru.tanggal_laporan,
+                baru.id_pimpinan,  // sudah bisa null
+                baru.id_jenis,     // sudah bisa null
+                baru.tanggal_laporan, // sudah bisa null
                 baru.judul,
                 baru.isi_laporan,
                 (req.session?.user?.username) || 'system',
@@ -826,12 +926,10 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
                     return res.status(500).send('Gagal memperbarui data.');
                 }
 
-                // Clean up old file if it was replaced or moved
+                // Clean up old file if it was replaced
                 if (oldFilePath && fs.existsSync(oldFilePath)) {
                     try {
                         fs.unlinkSync(oldFilePath);
-
-                        // Try to cleanup empty directories
                         let parentDir = path.dirname(oldFilePath);
                         try {
                             if (fs.readdirSync(parentDir).length === 0) {
@@ -847,7 +945,10 @@ router.post('/laporan/edit/:id', isAuthenticated, upload.single('file_upload'), 
 
                 res.redirect('/laporan' + (baru.jenis_laporan ? `?jenis=${baru.jenis_laporan}` : ''));
             });
-        });
+        }
+
+        // Mulai proses
+        getPimpinanNameAndContinue();
     });
 });
 

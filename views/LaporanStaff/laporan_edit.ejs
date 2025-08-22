@@ -31,8 +31,9 @@
 
                 <!-- Pimpinan -->
                 <div class="col-md-4">
-                    <label for="pimpinan" class="form-label">Pimpinan</label>
-                    <select id="pimpinan" name="id_pimpinan" class="form-select" required>
+                    <label for="pimpinan" class="form-label">Pimpinan <small class="text-muted">(opsional)</small></label>
+                    <select id="pimpinan" name="id_pimpinan" class="form-select">
+                        <option value="">-- Pilih Pimpinan --</option>
                         <% pimpinan.forEach(p => { %>
                             <option value="<%= p.id_pimpinan %>" <%= Number(detail.id_pimpinan) === Number(p.id_pimpinan) ? 'selected' : '' %>><%= p.jabatan_pimpinan %></option>
                         <% }) %>
@@ -41,8 +42,9 @@
 
                 <!-- Jenis Media -->
                 <div class="col-md-4">
-                    <label for="jenisMedia" class="form-label">Jenis Media</label>
-                    <select id="jenisMedia" name="id_jenis" class="form-select" required>
+                    <label for="jenisMedia" class="form-label">Jenis Media <small class="text-muted">(opsional)</small></label>
+                    <select id="jenisMedia" name="id_jenis" class="form-select">
+                        <option value="">-- Pilih Jenis Media --</option>
                         <% jenis.forEach(j => { %>
                             <option value="<%= j.id_jenis %>" <%= Number(detail.id_jenis) === Number(j.id_jenis) ? 'selected' : '' %>><%= j.nama_jenis %></option>
                         <% }) %>
@@ -52,7 +54,7 @@
                 <!-- Tanggal -->
                 <div class="col-md-4">
                     <label for="tanggalLaporan" class="form-label">Tanggal</label>
-                    <input id="tanggalLaporan" type="date" name="tanggal_laporan" class="form-control" value="<%= detail.tanggal_laporan_str %>" required>
+                    <input id="tanggalLaporan" type="date" name="tanggal_laporan" class="form-control" value="<%= detail.tanggal_laporan_str || '' %>">
                 </div>
 
                 <!-- Judul -->

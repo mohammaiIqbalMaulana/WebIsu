@@ -32,14 +32,14 @@
             </div>
 
             <div class="col-lg-3 col-md-6">
-                <label class="form-label fw-semibold">Pimpinan</label>
-                <select id="pimpinanSelect" class="form-select form-select" required>
-                    <option value="">-- Pilih Pimpinan --</option>
+                <label class="form-label fw-semibold">Pimpinan <small class="text-muted">(opsional)</small></label>
+                <select id="pimpinanSelect" class="form-select form-select">
+                    <option value="">-- Semua / Tanpa Pimpinan --</option>
                     <% pimpinanList.forEach(p=> { %>
                         <option value="<%= p.id_pimpinan %>">
                             <%= p.jabatan_pimpinan %>
                         </option>
-                        <% }) %>
+                    <% }) %>
                 </select>
             </div>
 
@@ -383,6 +383,7 @@
             showLoading(true);
 
             try {
+                const pimpinanParam = pimpinan || '';
                 const response = await fetch(`/laporan/api/calendar-data?jenis_laporan=${jenis}&id_pimpinan=${pimpinan}&year=${year}&month=${month}`);
                 const data = await response.json();
 
