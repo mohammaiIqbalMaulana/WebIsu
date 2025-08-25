@@ -29,6 +29,30 @@ function getFileUrl(filePath) {
     return normalizedPath;
 }
 
+// Helper function untuk parse kewenangan text
+function parseKewenanganText(kewenanganStr) {
+    if (!kewenanganStr) return [];
+
+    try {
+        // Handle JSON array format: ["text1","text2"]  
+        if (kewenanganStr.startsWith('[') && kewenanganStr.endsWith(']')) {
+            const parsed = JSON.parse(kewenanganStr);
+            return parsed.filter(text => text && text.toString().trim());
+        }
+        // Handle comma separated: "text1,text2"
+        else if (kewenanganStr.includes(',')) {
+            return kewenanganStr.split(',').map(text => text.trim()).filter(text => text);
+        }
+        // Single text: "text1"
+        else {
+            return kewenanganStr.trim() ? [kewenanganStr.trim()] : [];
+        }
+    } catch (error) {
+        console.error('Error parsing kewenangan text:', error);
+        return [];
+    }
+}
+
 // Monitoring Prioritas dengan filtering dan pagination
 router.get('/monitoring-prioritas', async (req, res) => {
     try {
@@ -156,7 +180,7 @@ router.get('/monitoring-prioritas', async (req, res) => {
                     year: 'numeric'
                 }),
                 stakeholder_names_array: row.stakeholder_names ? row.stakeholder_names.split(',') : [],
-                kewenangan_array: row.kewenangan ? row.kewenangan.split(',') : [],
+                kewenangan_array: row.kewenangan ? parseKewenanganText(row.kewenangan) : [],
                 files: validFiles,
                 file_count: validFiles.length
             };
@@ -331,7 +355,7 @@ router.get('/monitoring-khusus', async (req, res) => {
                     year: 'numeric'
                 }),
                 stakeholder_names_array: row.stakeholder_names ? row.stakeholder_names.split(',') : [],
-                kewenangan_array: row.kewenangan ? row.kewenangan.split(',') : [],
+                kewenangan_array: row.kewenangan ? parseKewenanganText(row.kewenangan) : [],
                 files: validFiles,
                 file_count: validFiles.length
             };
@@ -506,7 +530,7 @@ router.get('/monitoring-viralitas', async (req, res) => {
                     year: 'numeric'
                 }),
                 stakeholder_names_array: row.stakeholder_names ? row.stakeholder_names.split(',') : [],
-                kewenangan_array: row.kewenangan ? row.kewenangan.split(',') : [],
+                kewenangan_array: row.kewenangan ? parseKewenanganText(row.kewenangan) : [],
                 files: validFiles,
                 file_count: validFiles.length
             };
@@ -620,7 +644,7 @@ router.get('/laporan-detail/:id', async (req, res) => {
                 year: 'numeric'
             }),
             stakeholder_names_array: laporan.stakeholder_names ? laporan.stakeholder_names.split(',') : [],
-            kewenangan_array: laporan.kewenangan ? laporan.kewenangan.split(',') : [],
+            kewenangan_array: laporan.kewenangan ? parseKewenanganText(laporan.kewenangan) : [],
             files: validFiles,
             file_count: validFiles.length
         };
