@@ -858,7 +858,7 @@ router.post('/laporan/tambah', isAuthenticated, upload.single('file_upload'), (r
 });
 
 // GET /laporan/download/:id - Download file (UPDATED)
-router.get('/laporan/download/:id', isAuthenticated, (req, res) => {
+router.get('/laporan/download/:id', isAuthenticated, (req, res, next) => {
     const { id } = req.params;
 
     const sql = `
@@ -889,7 +889,13 @@ router.get('/laporan/download/:id', isAuthenticated, (req, res) => {
 
         res.download(fullPath, file_name, (err) => {
             if (err) {
-                return res.status(500).send('Gagal mendownload file.');
+                // Jika headers sudah terkirim (stream sudah mulai), jangan kirim response lagi
+                if (res.headersSent) {
+                    console.error('Gagal mendownload file (headers sudah terkirim):', err);
+                    return; // tidak bisa set status/send lagi
+                }
+                // Jika belum terkirim, aman untuk balas error atau teruskan ke handler error
+                return next ? next(err) : res.status(500).send('Gagal mendownload file.');
             }
         });
     });
