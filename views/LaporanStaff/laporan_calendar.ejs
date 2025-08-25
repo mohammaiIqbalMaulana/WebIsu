@@ -86,7 +86,6 @@
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -519,42 +518,102 @@
             loadCalendarData();
         }
 
+        // Perbaikan fungsi download dengan loading indicator
         function downloadDay(day) {
             const jenis = document.getElementById('jenisSelect').value;
             const pimpinan = document.getElementById('pimpinanSelect').value;
             const dayStr = day.toString().padStart(2, '0');
 
-            submitDownloadForm({
-                jenis_laporan: jenis,
-                id_pimpinan: pimpinan,
-                year: currentYear,
-                month: currentMonth.toString().padStart(2, '0'),
-                day: dayStr
-            });
+            // Tampilkan loading pada tombol yang diklik
+            const dayCell = document.querySelector(`.day-cell[data-day="${day}"]`);
+            const originalContent = dayCell.innerHTML;
+            dayCell.innerHTML = '<div class="spinner-border spinner-border-sm text-white"></div>';
+            dayCell.style.pointerEvents = 'none';
+
+            // Tambahkan timeout untuk handling jika download gagal
+            const timeoutId = setTimeout(() => {
+                dayCell.innerHTML = originalContent;
+                dayCell.style.pointerEvents = 'auto';
+                alert('Download timeout. Silakan coba lagi.');
+            }, 30000); // 30 detik timeout
+
+            try {
+                submitDownloadForm({
+                    jenis_laporan: jenis,
+                    id_pimpinan: pimpinan || '', // Pastikan value tidak undefined
+                    year: currentYear,
+                    month: currentMonth.toString().padStart(2, '0'),
+                    day: dayStr
+                });
+
+                // Reset UI setelah 3 detik (assuming download started)
+                setTimeout(() => {
+                    clearTimeout(timeoutId);
+                    dayCell.innerHTML = originalContent;
+                    dayCell.style.pointerEvents = 'auto';
+                }, 3000);
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+                dayCell.innerHTML = originalContent;
+                dayCell.style.pointerEvents = 'auto';
+                console.error('Download error:', error);
+                alert('Terjadi kesalahan saat download. Silakan coba lagi.');
+            }
         }
 
         function downloadMonth() {
             const jenis = document.getElementById('jenisSelect').value;
             const pimpinan = document.getElementById('pimpinanSelect').value;
+            const btn = document.getElementById('downloadMonthBtn');
+            
+            // Disable button dan show loading
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Downloading...';
+            btn.disabled = true;
 
-            submitDownloadForm({
-                jenis_laporan: jenis,
-                id_pimpinan: pimpinan,
-                year: currentYear,
-                month: currentMonth.toString().padStart(2, '0')
-            });
+            const timeoutId = setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Download timeout. Silakan coba lagi.');
+            }, 60000); // 60 detik untuk bulan penuh
+
+            try {
+                submitDownloadForm({
+                    jenis_laporan: jenis,
+                    id_pimpinan: pimpinan || '',
+                    year: currentYear,
+                    month: currentMonth.toString().padStart(2, '0')
+                });
+
+                // Reset button setelah 5 detik
+                setTimeout(() => {
+                    clearTimeout(timeoutId);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 5000);
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                console.error('Download error:', error);
+                alert('Terjadi kesalahan saat download. Silakan coba lagi.');
+            }
         }
 
         function submitDownloadForm(data) {
+            
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/laporan/download-zip';
+            // Hapus target="_blank" agar tetap di halaman yang sama
 
             Object.entries(data).forEach(([key, value]) => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;
-                input.value = value;
+                input.value = value || ''; // Pastikan tidak ada undefined
                 form.appendChild(input);
             });
 
@@ -562,6 +621,29 @@
             form.submit();
             document.body.removeChild(form);
         }
+
+        // Perbaikan event listener untuk range form
+        document.getElementById('rangeForm').addEventListener('submit', function(e) {
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            
+            // Validasi range
+            if (!validateRange(e)) {
+                return;
+            }
+            
+            // Show loading
+            btn.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i> Downloading...';
+            btn.disabled = true;
+            
+            // Hapus target blank agar tetap di halaman yang sama
+            
+            // Reset button setelah 5 detik
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 5000);
+        });
 
         function updateStats() {
             const container = document.getElementById('statsContainer');

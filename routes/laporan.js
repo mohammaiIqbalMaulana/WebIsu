@@ -129,15 +129,202 @@ router.get('/laporan/calendar', isAuthenticated, (req, res) => {
 router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
     const { jenis_laporan, id_pimpinan, year, month, day, startDate, endDate } = req.body;
 
+    console.log('Download ZIP request:', req.body); // Debug log
+
+    // Validasi input dasar - untuk range date, year dan month bisa diambil dari startDate
+    if (!jenis_laporan) {
+        return res.status(400).send('Parameter jenis_laporan wajib diisi.');
+    }
+
+    // Untuk range date, extract year dan month dari startDate jika tidak ada
+    let actualYear = year;
+    let actualMonth = month;
+
+    if (startDate && endDate && (!year || !month)) {
+        const startDateObj = new Date(startDate);
+        if (!isNaN(startDateObj.getTime())) {
+            actualYear = startDateObj.getFullYear().toString();
+            actualMonth = (startDateObj.getMonth() + 1).toString().padStart(2, '0');
+        }
+    }
+
+    // Validasi final
+    if (!actualYear || !actualMonth) {
+        return res.status(400).send('Parameter tidak lengkap. Harap pilih periode atau isi tanggal range dengan benar.');
+    }
 
     const jenisFolder = JENIS_MAP[jenis_laporan] || 'Unknown';
 
+    // CASE 1: Tidak ada pimpinan (id_pimpinan kosong atau null)
     if (!id_pimpinan || id_pimpinan === '') {
-        // Path untuk laporan tanpa pimpinan
         const pimpinanFolder = 'No-Pimpinan';
         const baseMonthPath = path.join(
             __dirname,
-            `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${year}-${month}`
+            `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${actualYear}-${actualMonth}`
+        );
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        let zipFileName = '';
+        let anyAdded = false;
+
+        res.setHeader('Content-Type', 'application/zip');
+
+        // Handle error di archiver
+        archive.on('error', err => {
+            console.error('Archive error:', err);
+            if (!res.headersSent) {
+                res.status(500).send('Gagal membuat ZIP file.');
+            }
+        });
+
+        // MODE: rentang tanggal
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            if (isNaN(start) || isNaN(end)) {
+                return res.status(400).send('Format tanggal tidak valid.');
+            }
+            if (end < start) {
+                return res.status(400).send('Tanggal akhir tidak boleh lebih kecil dari tanggal awal.');
+            }
+
+            zipFileName = `${jenisFolder}_${pimpinanFolder}_${start.toISOString().slice(0, 10)}_sampai_${end.toISOString().slice(0, 10)}.zip`;
+            res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+            archive.pipe(res);
+
+            let cur = new Date(start);
+            while (cur <= end) {
+                const y = cur.getFullYear();
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const d = String(cur.getDate()).padStart(2, '0');
+                const fullDate = `${y}-${m}-${d}`;
+
+                const monthPath = path.join(
+                    __dirname,
+                    `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${y}-${m}`
+                );
+                const dayDir = path.join(monthPath, fullDate);
+
+                if (fs.existsSync(dayDir)) {
+                    try {
+                        const files = fs.readdirSync(dayDir).filter(f =>
+                            fs.statSync(path.join(dayDir, f)).isFile()
+                        );
+
+                        if (files.length > 0) {
+                            archive.directory(dayDir, fullDate);
+                            anyAdded = true;
+                        }
+                    } catch (e) {
+                        console.error(`Error reading directory ${dayDir}:`, e);
+                    }
+                }
+
+                cur.setDate(cur.getDate() + 1);
+            }
+
+            if (!anyAdded) {
+                return res.status(404).send('Tidak ada file pada periode tersebut.');
+            }
+
+            archive.finalize();
+            return;
+        }
+
+        // MODE: per-hari
+        if (day) {
+            const fullDate = `${actualYear}-${actualMonth}-${String(day).padStart(2, '0')}`;
+            const targetPath = path.join(baseMonthPath, fullDate);
+
+            if (!fs.existsSync(targetPath)) {
+                return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
+            }
+
+            // Cek apakah ada file di directory
+            try {
+                const files = fs.readdirSync(targetPath).filter(f =>
+                    fs.statSync(path.join(targetPath, f)).isFile()
+                );
+
+                if (files.length === 0) {
+                    return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
+                }
+
+                zipFileName = `${jenisFolder}_${pimpinanFolder}_${fullDate}.zip`;
+                res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+                archive.pipe(res);
+
+                // Add files individually dengan nama yang jelas
+                files.forEach(fileName => {
+                    const filePath = path.join(targetPath, fileName);
+                    archive.file(filePath, { name: fileName });
+                });
+
+                archive.finalize();
+                return;
+            } catch (e) {
+                console.error(`Error reading directory ${targetPath}:`, e);
+                return res.status(500).send('Error membaca direktori file.');
+            }
+        }
+
+        // MODE: per-bulan
+        if (!fs.existsSync(baseMonthPath)) {
+            return res.status(404).send('Tidak ada file untuk bulan tersebut.');
+        }
+
+        try {
+            // Cek apakah bulan ini punya file
+            const monthDirs = fs.readdirSync(baseMonthPath, { withFileTypes: true })
+                .filter(ent => ent.isDirectory());
+
+            let hasAnyFiles = false;
+            for (const dir of monthDirs) {
+                const dayPath = path.join(baseMonthPath, dir.name);
+                const files = fs.readdirSync(dayPath).filter(f =>
+                    fs.statSync(path.join(dayPath, f)).isFile()
+                );
+                if (files.length > 0) {
+                    hasAnyFiles = true;
+                    break;
+                }
+            }
+
+            if (!hasAnyFiles) {
+                return res.status(404).send('Tidak ada file untuk bulan tersebut.');
+            }
+
+            zipFileName = `${jenisFolder}_${pimpinanFolder}_${year}-${month}.zip`;
+            res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+            archive.pipe(res);
+            archive.directory(baseMonthPath, false);
+            archive.finalize();
+            return;
+        } catch (e) {
+            console.error(`Error reading month directory ${baseMonthPath}:`, e);
+            return res.status(500).send('Error membaca direktori bulan.');
+        }
+    }
+
+    // CASE 2: Ada pimpinan (existing code with improvements)
+    const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
+
+    db.query(qPimpinan, [id_pimpinan], (err, rows) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).send('Terjadi kesalahan database.');
+        }
+
+        if (!rows.length) {
+            return res.status(404).send('Pimpinan tidak ditemukan.');
+        }
+
+        const pimpinanName = rows[0].jabatan_pimpinan;
+        const pimpinanFolder = sanitizeFileName(pimpinanName);
+        const baseMonthPath = path.join(
+            __dirname,
+            `../public/uploads/laporan/${jenisFolder}/${pimpinanFolder}/${actualYear}-${actualMonth}`
         );
 
         const archive = archiver('zip', { zlib: { level: 9 } });
@@ -145,7 +332,14 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
 
         res.setHeader('Content-Type', 'application/zip');
 
-        // MODE: rentang tanggal
+        archive.on('error', err => {
+            console.error('Archive error:', err);
+            if (!res.headersSent) {
+                res.status(500).send('Gagal membuat ZIP file.');
+            }
+        });
+
+        // MODE: rentang tanggal dengan pimpinan
         if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -177,52 +371,105 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
                 const dayDir = path.join(monthPath, fullDate);
 
                 if (fs.existsSync(dayDir)) {
-                    archive.directory(dayDir, fullDate);
-                    anyAdded = true;
+                    try {
+                        const files = fs.readdirSync(dayDir).filter(f =>
+                            fs.statSync(path.join(dayDir, f)).isFile()
+                        );
+
+                        if (files.length > 0) {
+                            archive.directory(dayDir, fullDate);
+                            anyAdded = true;
+                        }
+                    } catch (e) {
+                        console.error(`Error reading directory ${dayDir}:`, e);
+                    }
                 }
 
-                cur.setDate(cur.getDate() + 1); // next day
+                cur.setDate(cur.getDate() + 1);
             }
 
-            if (!anyAdded) return res.status(404).send('Tidak ada file pada periode tersebut.');
+            if (!anyAdded) {
+                return res.status(404).send('Tidak ada file pada periode tersebut.');
+            }
+
             archive.finalize();
-            archive.on('error', err => {
-                console.error('Archive error:', err);
-                res.status(500).send('Gagal membuat ZIP file.');
-            });
             return;
         }
 
-        // MODE: per-hari
+        // MODE: per-hari dengan pimpinan
         if (day) {
-            const fullDate = `${year}-${month}-${day}`;
+            const fullDate = `${year}-${month}-${String(day).padStart(2, '0')}`;
             const targetPath = path.join(baseMonthPath, fullDate);
-            if (!fs.existsSync(targetPath)) return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
-            zipFileName = `${jenisFolder}_${pimpinanFolder}_${fullDate}.zip`;
+
+            if (!fs.existsSync(targetPath)) {
+                return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
+            }
+
+            try {
+                const files = fs.readdirSync(targetPath).filter(f =>
+                    fs.statSync(path.join(targetPath, f)).isFile()
+                );
+
+                if (files.length === 0) {
+                    return res.status(404).send('Tidak ada file untuk tanggal tersebut.');
+                }
+
+                zipFileName = `${jenisFolder}_${pimpinanFolder}_${fullDate}.zip`;
+                res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+                archive.pipe(res);
+
+                // Add files individually
+                files.forEach(fileName => {
+                    const filePath = path.join(targetPath, fileName);
+                    archive.file(filePath, { name: fileName });
+                });
+
+                archive.finalize();
+                return;
+            } catch (e) {
+                console.error(`Error reading directory ${targetPath}:`, e);
+                return res.status(500).send('Error membaca direktori file.');
+            }
+        }
+
+        // MODE: per-bulan dengan pimpinan
+        if (!fs.existsSync(baseMonthPath)) {
+            return res.status(404).send('Tidak ada file untuk bulan tersebut.');
+        }
+
+        try {
+            // Cek apakah bulan ini punya file
+            const monthDirs = fs.readdirSync(baseMonthPath, { withFileTypes: true })
+                .filter(ent => ent.isDirectory());
+
+            let hasAnyFiles = false;
+            for (const dir of monthDirs) {
+                const dayPath = path.join(baseMonthPath, dir.name);
+                const files = fs.readdirSync(dayPath).filter(f =>
+                    fs.statSync(path.join(dayPath, f)).isFile()
+                );
+                if (files.length > 0) {
+                    hasAnyFiles = true;
+                    break;
+                }
+            }
+
+            if (!hasAnyFiles) {
+                return res.status(404).send('Tidak ada file untuk bulan tersebut.');
+            }
+
+            zipFileName = `${jenisFolder}_${pimpinanFolder}_${year}-${month}.zip`;
             res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
             archive.pipe(res);
-            archive.directory(targetPath, false);
+            archive.directory(baseMonthPath, false);
             archive.finalize();
             return;
+        } catch (e) {
+            console.error(`Error reading month directory ${baseMonthPath}:`, e);
+            return res.status(500).send('Error membaca direktori bulan.');
         }
-
-        // MODE: per-bulan
-        if (!fs.existsSync(baseMonthPath)) return res.status(404).send('Tidak ada file untuk bulan tersebut.');
-        zipFileName = `${jenisFolder}_${pimpinanFolder}_${year}-${month}.zip`;
-        res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-        archive.pipe(res);
-        archive.directory(baseMonthPath, false);
-        archive.finalize();
-        return;
-    }
-
-    const qPimpinan = `SELECT jabatan_pimpinan FROM kategori_pimpinan WHERE id_pimpinan = ? AND is_deleted = 0`;
-    db.query(qPimpinan, [id_pimpinan], (err, rows) => {
-        if (err || !rows.length) return res.status(500).send('Pimpinan tidak ditemukan.');
-
     });
 });
-
 
 // GET /laporan/api/calendar-data - API untuk calendar data
 router.get('/laporan/api/calendar-data', isAuthenticated, (req, res) => {
