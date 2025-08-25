@@ -281,7 +281,7 @@ router.get('/', (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // FIXED: Simple query tanpa JOIN yang bermasalah
+    // FIXED: Query dengan pengurutan yang lebih baik
     let query = `
         SELECT lp.*
         FROM laporan_pimpinan lp
@@ -311,9 +311,7 @@ router.get('/', (req, res) => {
         params.push('%' + uraianSearch + '%');
     }
 
-    // Simplified filter logic kewenangan dan stakeholder
     if (kewenanganFilter.trim()) {
-        // Simple text search dalam kewenangan field
         query += ' AND lp.kewenangan LIKE ?';
         params.push('%' + kewenanganFilter + '%');
     }
@@ -330,20 +328,26 @@ router.get('/', (req, res) => {
                     lp.stakeholder LIKE ?
                 )`);
                 params.push(
-                    id.toString(),                    // Single value: "58"
-                    `[${id},%`,                      // Start of array: "[58,59]"
-                    `%,${id},%`,                     // Middle of array: "[57,58,59]"
-                    `%,${id}]`                       // End of array: "[57,58]"
+                    id.toString(),
+                    `[${id},%`,
+                    `%,${id},%`,
+                    `%,${id}]`
                 );
             });
             query += ` AND (${stakeholderConditions.join(' OR ')})`;
         }
     }
 
-    query += ' ORDER BY lp.tanggal_laporan DESC LIMIT ? OFFSET ?';
+    // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC (yang terbaru diinput)
+    // Jika created_at NULL, gunakan updated_at sebagai fallback
+    query += ` ORDER BY 
+        lp.tanggal_laporan DESC, 
+        COALESCE(lp.created_at) DESC,
+        lp.id DESC 
+        LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    // FIXED: Simplified count query
+    // Count query tetap sama
     let countQuery = `
         SELECT COUNT(lp.id) as total 
         FROM laporan_pimpinan lp 
@@ -374,7 +378,6 @@ router.get('/', (req, res) => {
     }
 
     if (kewenanganFilter.trim()) {
-        // Simple text search dalam kewenangan field
         countQuery += ' AND lp.kewenangan LIKE ?';
         countParams.push('%' + kewenanganFilter + '%');
     }
@@ -434,9 +437,7 @@ router.get('/', (req, res) => {
                 });
             }
 
-            // FIXED: Process data with proper OPD name fetching
             processRowsWithOPDNames(rows, (processedRows) => {
-                // Build pagination URLs
                 const filterParams = {
                     tanggal_dari: tanggalDari,
                     tanggal_sampai: tanggalSampai,

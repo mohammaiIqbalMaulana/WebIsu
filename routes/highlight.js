@@ -80,7 +80,7 @@ router.get('/monitoring-prioritas', async (req, res) => {
         
         let params = [];
 
-        // Tambahkan filter tanggal
+        // Filter conditions (sama seperti sebelumnya)
         if (tanggal_dari && tanggal_sampai) {
             query += ' AND lp.tanggal_laporan BETWEEN ? AND ?';
             params.push(tanggal_dari, tanggal_sampai);
@@ -92,19 +92,16 @@ router.get('/monitoring-prioritas', async (req, res) => {
             params.push(tanggal_sampai);
         }
 
-        // Tambahkan filter stakeholder
         if (stakeholder) {
             query += ' AND lp.stakeholder LIKE ?';
             params.push(`%${stakeholder}%`);
         }
 
-        // Tambahkan filter kewenangan
         if (kewenangan) {
             query += ' AND lp.kewenangan LIKE ?';
             params.push(`%${kewenangan}%`);
         }
 
-        // Tambahkan search
         if (search) {
             query += ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
@@ -113,7 +110,7 @@ router.get('/monitoring-prioritas', async (req, res) => {
         // Group by untuk menghindari duplikasi
         query += ' GROUP BY lp.id';
 
-        // Hitung total data untuk pagination
+        // Count query untuk pagination (sama seperti sebelumnya)
         const countQuery = `
             SELECT COUNT(DISTINCT lp.id) as total 
             FROM laporan_pimpinan lp
@@ -138,33 +135,34 @@ router.get('/monitoring-prioritas', async (req, res) => {
         const totalData = countResult[0].total;
         const totalPages = Math.ceil(totalData / limit);
 
-        // Ambil data dengan pagination
-        query += ' ORDER BY lp.tanggal_laporan DESC LIMIT ? OFFSET ?';
+        // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
+        query += ` ORDER BY 
+            lp.tanggal_laporan DESC, 
+            COALESCE(lp.created_at, lp.updated_at) DESC,
+            lp.id DESC 
+            LIMIT ? OFFSET ?`;
         params.push(parseInt(limit), offset);
 
         const [rows] = await db.promise().query(query, params);
 
-        // Process data untuk tampilan dengan validasi file
+        // Process data untuk tampilan dengan validasi file (sama seperti sebelumnya)
         const processedRows = rows.map(row => {
             let files = [];
             let validFiles = [];
             
             if (row.file_path) {
                 try {
-                    // Coba parse sebagai JSON array
                     if (row.file_path.startsWith('[')) {
                         files = JSON.parse(row.file_path);
                     } else {
                         files = [row.file_path];
                     }
                     
-                    // Validasi setiap file dan buat URL yang konsisten
                     validFiles = files
                         .map(filePath => getFileUrl(filePath))
                         .filter(fileUrl => fileUrl && checkFileExists(fileUrl));
                         
                 } catch (e) {
-                    // Fallback ke single file
                     const fileUrl = getFileUrl(row.file_path);
                     if (fileUrl && checkFileExists(fileUrl)) {
                         validFiles = [fileUrl];
@@ -190,7 +188,7 @@ router.get('/monitoring-prioritas', async (req, res) => {
         const highlight = processedRows.length > 0 ? processedRows[0] : null;
         const laporanKecil = processedRows.slice(1).map(laporan => ({
             ...laporan,
-                isi_laporan: laporan.isi_laporan // Keep the original isi_laporan
+            isi_laporan: laporan.isi_laporan // Keep the original isi_laporan
         }));
 
         // Ambil data OPD untuk dropdown filter
@@ -243,7 +241,6 @@ router.get('/monitoring-khusus', async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        // Build query dengan join ke tabel OPD
         let query = `
             SELECT 
                 lp.*,
@@ -255,7 +252,6 @@ router.get('/monitoring-khusus', async (req, res) => {
         
         let params = [];
 
-        // Tambahkan filter tanggal
         if (tanggal_dari && tanggal_sampai) {
             query += ' AND lp.tanggal_laporan BETWEEN ? AND ?';
             params.push(tanggal_dari, tanggal_sampai);
@@ -267,28 +263,23 @@ router.get('/monitoring-khusus', async (req, res) => {
             params.push(tanggal_sampai);
         }
 
-        // Tambahkan filter stakeholder
         if (stakeholder) {
             query += ' AND lp.stakeholder LIKE ?';
             params.push(`%${stakeholder}%`);
         }
 
-        // Tambahkan filter kewenangan
         if (kewenangan) {
             query += ' AND lp.kewenangan LIKE ?';
             params.push(`%${kewenangan}%`);
         }
 
-        // Tambahkan search
         if (search) {
             query += ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
 
-        // Group by untuk menghindari duplikasi
         query += ' GROUP BY lp.id';
 
-        // Hitung total data untuk pagination
         const countQuery = `
             SELECT COUNT(DISTINCT lp.id) as total 
             FROM laporan_pimpinan lp
@@ -313,33 +304,33 @@ router.get('/monitoring-khusus', async (req, res) => {
         const totalData = countResult[0].total;
         const totalPages = Math.ceil(totalData / limit);
 
-        // Ambil data dengan pagination
-        query += ' ORDER BY lp.tanggal_laporan DESC LIMIT ? OFFSET ?';
+        // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
+        query += ` ORDER BY 
+            lp.tanggal_laporan DESC, 
+            COALESCE(lp.created_at, lp.updated_at) DESC,
+            lp.id DESC 
+            LIMIT ? OFFSET ?`;
         params.push(parseInt(limit), offset);
 
         const [rows] = await db.promise().query(query, params);
 
-        // Process data untuk tampilan dengan validasi file
         const processedRows = rows.map(row => {
             let files = [];
             let validFiles = [];
             
             if (row.file_path) {
                 try {
-                    // Coba parse sebagai JSON array
                     if (row.file_path.startsWith('[')) {
                         files = JSON.parse(row.file_path);
                     } else {
                         files = [row.file_path];
                     }
                     
-                    // Validasi setiap file dan buat URL yang konsisten
                     validFiles = files
                         .map(filePath => getFileUrl(filePath))
                         .filter(fileUrl => fileUrl && checkFileExists(fileUrl));
                         
                 } catch (e) {
-                    // Fallback ke single file
                     const fileUrl = getFileUrl(row.file_path);
                     if (fileUrl && checkFileExists(fileUrl)) {
                         validFiles = [fileUrl];
@@ -361,14 +352,12 @@ router.get('/monitoring-khusus', async (req, res) => {
             };
         });
 
-        // Pisahkan highlight dan laporan kecil
         const highlight = processedRows.length > 0 ? processedRows[0] : null;
         const laporanKecil = processedRows.slice(1).map(laporan => ({
             ...laporan,
-                isi_laporan: laporan.isi_laporan // Keep the original isi_laporan
+            isi_laporan: laporan.isi_laporan
         }));
 
-        // Ambil data OPD untuk dropdown filter
         const [opdData] = await db.promise().query(
             "SELECT id, nama_opd FROM opd WHERE is_deleted = 0 ORDER BY nama_opd ASC"
         );
@@ -418,7 +407,6 @@ router.get('/monitoring-viralitas', async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        // Build query dengan join ke tabel OPD
         let query = `
             SELECT 
                 lp.*,
@@ -430,7 +418,6 @@ router.get('/monitoring-viralitas', async (req, res) => {
         
         let params = [];
 
-        // Tambahkan filter tanggal
         if (tanggal_dari && tanggal_sampai) {
             query += ' AND lp.tanggal_laporan BETWEEN ? AND ?';
             params.push(tanggal_dari, tanggal_sampai);
@@ -442,28 +429,23 @@ router.get('/monitoring-viralitas', async (req, res) => {
             params.push(tanggal_sampai);
         }
 
-        // Tambahkan filter stakeholder
         if (stakeholder) {
             query += ' AND lp.stakeholder LIKE ?';
             params.push(`%${stakeholder}%`);
         }
 
-        // Tambahkan filter kewenangan
         if (kewenangan) {
             query += ' AND lp.kewenangan LIKE ?';
             params.push(`%${kewenangan}%`);
         }
 
-        // Tambahkan search
         if (search) {
             query += ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
 
-        // Group by untuk menghindari duplikasi
         query += ' GROUP BY lp.id';
 
-        // Hitung total data untuk pagination
         const countQuery = `
             SELECT COUNT(DISTINCT lp.id) as total 
             FROM laporan_pimpinan lp
@@ -488,33 +470,33 @@ router.get('/monitoring-viralitas', async (req, res) => {
         const totalData = countResult[0].total;
         const totalPages = Math.ceil(totalData / limit);
 
-        // Ambil data dengan pagination
-        query += ' ORDER BY lp.tanggal_laporan DESC LIMIT ? OFFSET ?';
+        // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
+        query += ` ORDER BY 
+            lp.tanggal_laporan DESC, 
+            COALESCE(lp.created_at, lp.updated_at) DESC,
+            lp.id DESC 
+            LIMIT ? OFFSET ?`;
         params.push(parseInt(limit), offset);
 
         const [rows] = await db.promise().query(query, params);
 
-        // Process data untuk tampilan dengan validasi file
         const processedRows = rows.map(row => {
             let files = [];
             let validFiles = [];
             
             if (row.file_path) {
                 try {
-                    // Coba parse sebagai JSON array
                     if (row.file_path.startsWith('[')) {
                         files = JSON.parse(row.file_path);
                     } else {
                         files = [row.file_path];
                     }
                     
-                    // Validasi setiap file dan buat URL yang konsisten
                     validFiles = files
                         .map(filePath => getFileUrl(filePath))
                         .filter(fileUrl => fileUrl && checkFileExists(fileUrl));
                         
                 } catch (e) {
-                    // Fallback ke single file
                     const fileUrl = getFileUrl(row.file_path);
                     if (fileUrl && checkFileExists(fileUrl)) {
                         validFiles = [fileUrl];
@@ -536,14 +518,12 @@ router.get('/monitoring-viralitas', async (req, res) => {
             };
         });
 
-        // Pisahkan highlight dan laporan kecil
         const highlight = processedRows.length > 0 ? processedRows[0] : null;
         const laporanKecil = processedRows.slice(1).map(laporan => ({
             ...laporan,
-                isi_laporan: laporan.isi_laporan // Keep the original isi_laporan
+            isi_laporan: laporan.isi_laporan
         }));
 
-        // Ambil data OPD untuk dropdown filter
         const [opdData] = await db.promise().query(
             "SELECT id, nama_opd FROM opd WHERE is_deleted = 0 ORDER BY nama_opd ASC"
         );
