@@ -225,7 +225,10 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
             }
 
             if (!anyAdded) {
-                return res.status(404).send('Tidak ada file pada periode tersebut.');
+                if (!res.headersSent) {
+                    return res.status(404).send('Tidak ada file pada periode tersebut.');
+                }
+                return;
             }
 
             archive.finalize();
@@ -389,7 +392,10 @@ router.post('/laporan/download-zip', isAuthenticated, (req, res) => {
             }
 
             if (!anyAdded) {
-                return res.status(404).send('Tidak ada file pada periode tersebut.');
+                if (!res.headersSent) {
+                    return res.status(404).send('Tidak ada file pada periode tersebut.');
+                }
+                return;
             }
 
             archive.finalize();
@@ -888,7 +894,7 @@ router.get('/laporan/download/:id', isAuthenticated, (req, res) => {
         res.setHeader('Content-Type', 'application/octet-stream');
 
         res.download(fullPath, file_name, (err) => {
-            if (err) {
+            if (err && !res.headersSent) {
                 return res.status(500).send('Gagal mendownload file.');
             }
         });
