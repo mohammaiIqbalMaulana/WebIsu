@@ -10,16 +10,17 @@ const query = promisify(db.query).bind(db);
  * Build date filter clause based on filter type
  * @param {string} filterType - 'daily', 'weekly', 'monthly'
  * @param {string} date - Date string
+ * @param {string} prefix - Table alias prefix (optional)
  */
-function buildDateFilter(filterType, date) {
+function buildDateFilter(filterType, date, prefix = '') {
   switch (filterType) {
     case 'daily':
-      return ` AND DATE(tanggal_laporan) = DATE('${date}')`;
+      return `DATE(${prefix}tanggal_laporan) = DATE('${date}')`;
     case 'weekly':
-      return ` AND YEARWEEK(tanggal_laporan, 1) = YEARWEEK('${date}', 1)`;
+      return `YEARWEEK(${prefix}tanggal_laporan, 1) = YEARWEEK('${date}', 1)`;
     case 'monthly':
       const [year, month] = date.split('-');
-      return ` AND YEAR(tanggal_laporan) = ${year} AND MONTH(tanggal_laporan) = ${month}`;
+      return `YEAR(${prefix}tanggal_laporan) = ${year} AND MONTH(${prefix}tanggal_laporan) = ${month}`;
     default:
       return '';
   }
@@ -40,7 +41,7 @@ router.get("/stats", async (req, res) => {
     // Build date filter clause
     let whereClause = 'WHERE is_deleted = 0';
     if (filters.filterType && filters.date) {
-      whereClause += buildDateFilter(filters.filterType, filters.date);
+      whereClause += ` AND ${buildDateFilter(filters.filterType, filters.date)}`;
     }
 
     // Get total count from laporan_pimpinan
@@ -190,7 +191,7 @@ router.get("/chart-data", async (req, res) => {
     // Build date filter clause
     let whereClause = 'WHERE is_deleted = 0';
     if (filters.filterType && filters.date) {
-      whereClause += buildDateFilter(filters.filterType, filters.date);
+      whereClause += ` AND ${buildDateFilter(filters.filterType, filters.date)}`;
     }
 
     // Get type stats from laporan_pimpinan
