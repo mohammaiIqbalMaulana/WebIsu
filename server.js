@@ -19,6 +19,8 @@ const khususRouter = require('./routes/khusus');
 const opdRouter = require('./routes/opd')
 const highlightRouter = require('./routes/highlight');
 const pimpinanRouter = require('./routes/pimpinan')
+const mediaOnlineRouter = require('./routes/mediaonline');
+const dashboardRouter = require('./routes/dashboard');
 
 // Load environment variables
 dotenv.config();
@@ -169,6 +171,8 @@ app.use('/isu-khusus', khususRouter);
 app.use('/opd', opdRouter);
 app.use('/highlight', highlightRouter);
 app.use('/pimpinan', pimpinanRouter);
+app.use('/media', mediaOnlineRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // ==================== ERROR HANDLERS ====================
 

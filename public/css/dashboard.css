@@ -1,0 +1,458 @@
+/* Dashboard Styles */
+
+.dashboard-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.dashboard-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* Welcome Section */
+.welcome-section {
+    margin-bottom: 25px;
+}
+
+.welcome-section .card {
+    border-radius: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.welcome-section .card-body {
+    padding: 2rem;
+}
+
+.welcome-section h4 {
+    color: white;
+    font-weight: 600;
+}
+
+.welcome-section .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.welcome-section .btn-primary {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.welcome-section .btn-primary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Controls Section */
+.controls-section {
+    margin-bottom: 25px;
+}
+
+.controls-section .card {
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+/* Filter Controls */
+.filter-section h6, .refresh-section h6 {
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 8px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    border-radius: 20px;
+    font-size: 0.85rem;
+    padding: 5px 15px;
+    transition: all 0.3s ease;
+    border-color: #007bff;
+}
+
+.filter-btn:hover {
+    background-color: #007bff;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.filter-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.date-picker-container {
+    max-width: 200px;
+}
+
+.date-picker {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+.date-picker:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Refresh Controls - Using Bootstrap classes now */
+
+.refresh-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.refresh-indicator {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Statistics Section */
+.statistics-section {
+    margin-bottom: 30px;
+}
+
+.statistics-section .card {
+    border-radius: 15px;
+}
+
+.statistics-section .card-header {
+    border-radius: 15px 15px 0 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.stat-item {
+    padding: 20px 15px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    margin: 0 10px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin: 0;
+    font-weight: 500;
+}
+
+.stat-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+/* Charts Section */
+.charts-section {
+    margin-bottom: 30px;
+}
+
+.charts-section .card {
+    border-radius: 15px;
+}
+
+.charts-section .card-header {
+    border-radius: 15px 15px 0 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.chart-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.chart-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.chart-subtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+/* Loading States */
+.dashboard-loader {
+    display: none;
+    text-align: center;
+    padding: 50px;
+    color: #6c757d;
+}
+
+.loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+/* Toast Notifications */
+.toast {
+    border-radius: 5px !important;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast-success {
+    background-color: #28a745 !important;
+}
+
+.toast-error {
+    background-color: #dc3545 !important;
+}
+
+.toast-info {
+    background-color: #007bff !important;
+}
+
+/* Error States */
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #f5c6cb;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.retry-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.retry-btn:hover {
+    background: #c82333;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .chart-wrapper {
+        height: 300px;
+    }
+
+    .dashboard-header {
+        text-align: center;
+    }
+
+    .welcome-section .card-body {
+        padding: 1.5rem;
+    }
+
+    .welcome-section .row {
+        text-align: center;
+    }
+
+    .welcome-section .col-md-4 {
+        margin-top: 20px;
+    }
+
+    .controls-section .row {
+        text-align: center;
+    }
+
+    .controls-section .col-md-8,
+    .controls-section .col-md-4 {
+        margin-bottom: 20px;
+    }
+
+    .filter-buttons {
+        justify-content: center;
+    }
+
+    .stat-item {
+        margin: 10px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 15px;
+    }
+
+    .chart-wrapper {
+        height: 280px;
+    }
+
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+    }
+
+    .welcome-section h4 {
+        font-size: 1.3rem;
+    }
+
+    .statistics-section .row .col-md-4 {
+        margin-bottom: 20px;
+    }
+
+    .controls-section .row {
+        flex-direction: column;
+    }
+
+    .filter-section,
+    .refresh-section {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .filter-buttons {
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .filter-btn {
+        font-size: 0.8rem;
+        padding: 4px 12px;
+    }
+
+    .date-picker-container {
+        max-width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .date-picker {
+        max-width: 180px;
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-wrapper {
+        height: 250px;
+    }
+
+    .welcome-section .card-body {
+        padding: 1rem;
+    }
+
+    .stat-item {
+        padding: 15px;
+    }
+
+    .stat-number {
+        font-size: 1.8rem;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .filter-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .filter-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .controls-section .card-body {
+        padding: 1rem;
+    }
+
+    .filter-section h6,
+    .refresh-section h6 {
+        font-size: 1rem;
+    }
+}

@@ -79,13 +79,8 @@
   <!-- Results Info -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <p class="text-muted mb-0">
-      Menampilkan <%= laporanKecil.length + (highlight ? 1 : 0) %> dari <%= pagination.totalData %> data
+      Menampilkan <%= laporanKecil.length + (highlight ? 1 : 0) %> dari <%= totalData %> data
     </p>
-    <% if (pagination.totalPages > 1) { %>
-    <p class="text-muted mb-0">
-      Halaman <%= pagination.currentPage %> dari <%= pagination.totalPages %>
-    </p>
-    <% } %>
   </div>
 
   <!-- Highlight Card -->
@@ -274,36 +269,7 @@
   </div>
   <% } %>
 
-  <!-- Pagination -->
-  <% if (pagination.totalPages > 1) { %>
-  <nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-      <% if (pagination.hasPrev) { %>
-        <li class="page-item">
-          <a class="page-link" href="?page=<%= pagination.prevPage %>&<%= new URLSearchParams(filters).toString() %>">
-            <i class="bi bi-chevron-left"></i> Sebelumnya
-          </a>
-        </li>
-      <% } %>
-      
-      <% for (let i = 1; i <= pagination.totalPages; i++) { %>
-        <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
-          <a class="page-link" href="?page=<%= i %>&<%= new URLSearchParams(filters).toString() %>">
-            <%= i %>
-          </a>
-        </li>
-      <% } %>
-      
-      <% if (pagination.hasNext) { %>
-        <li class="page-item">
-          <a class="page-link" href="?page=<%= pagination.nextPage %>&<%= new URLSearchParams(filters).toString() %>">
-            Selanjutnya <i class="bi bi-chevron-right"></i>
-          </a>
-        </li>
-      <% } %>
-    </ul>
-  </nav>
-  <% } %>
+
 
 </div>
 

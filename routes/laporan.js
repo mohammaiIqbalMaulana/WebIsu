@@ -591,6 +591,7 @@ router.get('/laporan', isAuthenticated, (req, res) => {
     const searchIsi = req.query.search_isi ? req.query.search_isi.trim() : '';
     const filterPimpinan = req.query.pimpinan ? Number(req.query.pimpinan) : null;
     const filterJenisLaporan = req.query.jenis ? Number(req.query.jenis) : null;
+    const filterJenisMedia = req.query.jenis_media ? Number(req.query.jenis_media) : null;
     const tanggalDari = req.query.tanggal_dari || '';
     const tanggalSampai = req.query.tanggal_sampai || '';
 
@@ -622,156 +623,184 @@ router.get('/laporan', isAuthenticated, (req, res) => {
         ORDER BY jabatan_pimpinan
     `;
 
+    // Query dropdown jenis media
+    const qJenisMedia = `
+        SELECT id_jenis, nama_jenis
+        FROM jenis
+        WHERE is_deleted = 0
+        ORDER BY nama_jenis
+    `;
+
     db.query(qPimpinan, (errPimpinan, pimpinanList) => {
         if (errPimpinan) {
             return res.status(500).send('Terjadi kesalahan server.');
         }
 
-        const jenisList = Object.keys(JENIS_MAP).map(k => ({
-            id_jenis: Number(k),
-            nama_jenis: JENIS_MAP[k]
-        }));
-
-        // Base query count
-        let countSql = `SELECT COUNT(*) as total FROM laporan_staff a WHERE a.is_deleted = 0`;
-        const countParams = [];
-
-        // Base query data
-        let sql = `
-            SELECT a.id, a.jenis_laporan, a.id_pimpinan, a.id_jenis, a.judul, a.isi_laporan, a.tanggal_laporan,
-                   a.created_at, a.updated_at, a.is_deleted, a.file_name, a.file_path, a.file_size,
-                   kp.jabatan_pimpinan AS nama_pimpinan,
-                   j.nama_jenis
-            FROM laporan_staff a
-            LEFT JOIN kategori_pimpinan kp ON a.id_pimpinan = kp.id_pimpinan
-            LEFT JOIN jenis j ON a.id_jenis = j.id_jenis
-            WHERE a.is_deleted = 0
-        `;
-        const params = [];
-
-        // Search conditions
-        let searchConditions = [];
-        if (searchJudul) {
-            searchConditions.push('LOWER(a.judul) LIKE LOWER(?)');
-            countParams.push(`%${searchJudul}%`);
-            params.push(`%${searchJudul}%`);
-        }
-        if (searchIsi) {
-            searchConditions.push('LOWER(a.isi_laporan) LIKE LOWER(?)');
-            countParams.push(`%${searchIsi}%`);
-            params.push(`%${searchIsi}%`);
-        }
-        if (searchConditions.length > 0) {
-            const whereSearch = ` AND (${searchConditions.join(' OR ')})`;
-            countSql += whereSearch;
-            sql += whereSearch;
-        }
-
-        // Filter pimpinan
-        if (filterPimpinan) {
-            countSql += ' AND a.id_pimpinan = ?';
-            sql += ' AND a.id_pimpinan = ?';
-            countParams.push(filterPimpinan);
-            params.push(filterPimpinan);
-        }
-
-        // Filter jenis laporan
-        if (filterJenisLaporan) {
-            countSql += ' AND a.jenis_laporan = ?';
-            sql += ' AND a.jenis_laporan = ?';
-            countParams.push(filterJenisLaporan);
-            params.push(filterJenisLaporan);
-        }
-
-        // Filter tanggal
-        if (tanggalDari && tanggalSampai) {
-            countSql += ' AND a.tanggal_laporan BETWEEN ? AND ?';
-            sql += ' AND a.tanggal_laporan BETWEEN ? AND ?';
-            countParams.push(tanggalDari, tanggalSampai);
-            params.push(tanggalDari, tanggalSampai);
-        } else if (tanggalDari) {
-            countSql += ' AND a.tanggal_laporan = ?';
-            sql += ' AND a.tanggal_laporan = ?';
-            countParams.push(tanggalDari);
-            params.push(tanggalDari);
-        } else if (tanggalSampai) {
-            countSql += ' AND a.tanggal_laporan = ?';
-            sql += ' AND a.tanggal_laporan = ?';
-            countParams.push(tanggalSampai);
-            params.push(tanggalSampai);
-        }
-
-        // Pagination
-        sql += ' ORDER BY a.tanggal_laporan DESC, a.id DESC LIMIT ?, ?';
-        params.push(offset, limit);
-
-        db.query(countSql, countParams, (countErr, countRows) => {
-            if (countErr) {
+        db.query(qJenisMedia, (errJenisMedia, jenisMediaList) => {
+            if (errJenisMedia) {
                 return res.status(500).send('Terjadi kesalahan server.');
             }
 
-            const totalData = countRows[0].total;
-            const totalPages = Math.ceil(totalData / limit);
+            const jenisList = Object.keys(JENIS_MAP).map(k => ({
+                id_jenis: Number(k),
+                nama_jenis: JENIS_MAP[k]
+            }));
 
-            if (page > totalPages && totalPages > 0) {
-                return res.redirect('/laporan');
+            // Base query count
+            let countSql = `SELECT COUNT(*) as total FROM laporan_staff a WHERE a.is_deleted = 0`;
+            const countParams = [];
+
+            // Base query data
+            let sql = `
+                SELECT a.id, a.jenis_laporan, a.id_pimpinan, a.id_jenis, a.judul, a.isi_laporan, a.tanggal_laporan,
+                       a.created_at, a.updated_at, a.is_deleted, a.file_name, a.file_path, a.file_size,
+                       kp.jabatan_pimpinan AS nama_pimpinan,
+                       j.nama_jenis
+                FROM laporan_staff a
+                LEFT JOIN kategori_pimpinan kp ON a.id_pimpinan = kp.id_pimpinan
+                LEFT JOIN jenis j ON a.id_jenis = j.id_jenis
+                WHERE a.is_deleted = 0
+            `;
+            const params = [];
+
+            // Search conditions
+            let searchConditions = [];
+            if (searchJudul) {
+                searchConditions.push('LOWER(a.judul) LIKE LOWER(?)');
+                countParams.push(`%${searchJudul}%`);
+                params.push(`%${searchJudul}%`);
+            }
+            if (searchIsi) {
+                searchConditions.push('LOWER(a.isi_laporan) LIKE LOWER(?)');
+                countParams.push(`%${searchIsi}%`);
+                params.push(`%${searchIsi}%`);
+            }
+            if (searchConditions.length > 0) {
+                const whereSearch = ` AND (${searchConditions.join(' OR ')})`;
+                countSql += whereSearch;
+                sql += whereSearch;
             }
 
-            db.query(sql, params, (err, rows) => {
-                if (err) {
+            // Filter pimpinan
+            if (filterPimpinan) {
+                countSql += ' AND a.id_pimpinan = ?';
+                sql += ' AND a.id_pimpinan = ?';
+                countParams.push(filterPimpinan);
+                params.push(filterPimpinan);
+            }
+
+            // Filter jenis laporan
+            if (filterJenisLaporan) {
+                countSql += ' AND a.jenis_laporan = ?';
+                sql += ' AND a.jenis_laporan = ?';
+                countParams.push(filterJenisLaporan);
+                params.push(filterJenisLaporan);
+            }
+
+            // Filter jenis media
+            if (filterJenisMedia) {
+                countSql += ' AND a.id_jenis = ?';
+                sql += ' AND a.id_jenis = ?';
+                countParams.push(filterJenisMedia);
+                params.push(filterJenisMedia);
+            }
+
+            // Filter tanggal
+            if (tanggalDari && tanggalSampai) {
+                countSql += ' AND a.tanggal_laporan BETWEEN ? AND ?';
+                sql += ' AND a.tanggal_laporan BETWEEN ? AND ?';
+                countParams.push(tanggalDari, tanggalSampai);
+                params.push(tanggalDari, tanggalSampai);
+            } else if (tanggalDari) {
+                countSql += ' AND a.tanggal_laporan = ?';
+                sql += ' AND a.tanggal_laporan = ?';
+                countParams.push(tanggalDari);
+                params.push(tanggalDari);
+            } else if (tanggalSampai) {
+                countSql += ' AND a.tanggal_laporan = ?';
+                sql += ' AND a.tanggal_laporan = ?';
+                countParams.push(tanggalSampai);
+                params.push(tanggalSampai);
+            }
+
+            // Pagination
+            sql += ' ORDER BY a.tanggal_laporan DESC, a.id DESC LIMIT ?, ?';
+            params.push(offset, limit);
+
+            db.query(countSql, countParams, (countErr, countRows) => {
+                if (countErr) {
                     return res.status(500).send('Terjadi kesalahan server.');
                 }
 
-                const dataFormatted = rows.map(r => ({
-                    ...r,
-                    tanggal_laporan: formatDateForInput(r.tanggal_laporan)
-                }));
+                const totalData = countRows[0].total;
+                const totalPages = Math.ceil(totalData / limit);
 
-                const hasFilter = searchJudul || searchIsi || filterPimpinan || filterJenisLaporan || tanggalDari || tanggalSampai;
-                let filterInfo = '';
-                if (hasFilter) {
-                    const filterParts = [];
-                    if (searchJudul) filterParts.push(`judul: "${searchJudul}"`);
-                    if (searchIsi) filterParts.push(`isi: "${searchIsi}"`);
-                    if (filterPimpinan) {
-                        const p = pimpinanList.find(pp => pp.id_pimpinan === filterPimpinan);
-                        if (p) filterParts.push(`pimpinan: "${p.jabatan_pimpinan}"`);
-                    }
-                    if (filterJenisLaporan) {
-                        const j = jenisList.find(jj => jj.id_jenis === filterJenisLaporan);
-                        if (j) filterParts.push(`jenis: "${j.nama_jenis}"`);
-                    }
-                    if (tanggalDari && tanggalSampai) filterParts.push(`tanggal: ${tanggalDari} s/d ${tanggalSampai}`);
-                    else if (tanggalDari) filterParts.push(`tanggal: dari ${tanggalDari}`);
-                    else if (tanggalSampai) filterParts.push(`tanggal: sampai ${tanggalSampai}`);
-                    filterInfo = filterParts.join(', ');
+                if (page > totalPages && totalPages > 0) {
+                    return res.redirect('/laporan');
                 }
 
-                res.render('LaporanStaff/laporan_list', {
-                    title: 'Laporan Staff',
-                    data: dataFormatted,
-                    JENIS_MAP,
-                    currentPage: 'laporan',
-                    pimpinanList,
-                    jenisList,
-                    searchJudul,
-                    searchIsi,
-                    filterPimpinan,
-                    filterJenis: filterJenisLaporan,
-                    tanggalDari,
-                    tanggalSampai,
-                    hasFilter,
-                    filterInfo,
-                    pagination: {
-                        currentPage: page,
-                        totalPages,
-                        totalData,
-                        startRecord: totalData > 0 ? offset + 1 : 0,
-                        endRecord: Math.min(offset + limit, totalData),
-                        hasNext: page < totalPages,
-                        hasPrev: page > 1,
-                        limit
+                db.query(sql, params, (err, rows) => {
+                    if (err) {
+                        return res.status(500).send('Terjadi kesalahan server.');
                     }
+
+                    const dataFormatted = rows.map(r => ({
+                        ...r,
+                        tanggal_laporan: formatDateForInput(r.tanggal_laporan)
+                    }));
+
+                    const hasFilter = searchJudul || searchIsi || filterPimpinan || filterJenisLaporan || filterJenisMedia || tanggalDari || tanggalSampai;
+                    let filterInfo = '';
+                    if (hasFilter) {
+                        const filterParts = [];
+                        if (searchJudul) filterParts.push(`judul: "${searchJudul}"`);
+                        if (searchIsi) filterParts.push(`isi: "${searchIsi}"`);
+                        if (filterPimpinan) {
+                            const p = pimpinanList.find(pp => pp.id_pimpinan === filterPimpinan);
+                            if (p) filterParts.push(`pimpinan: "${p.jabatan_pimpinan}"`);
+                        }
+                        if (filterJenisLaporan) {
+                            const j = jenisList.find(jj => jj.id_jenis === filterJenisLaporan);
+                            if (j) filterParts.push(`jenis: "${j.nama_jenis}"`);
+                        }
+                        if (filterJenisMedia) {
+                            const jm = jenisMediaList.find(j => j.id_jenis === filterJenisMedia);
+                            if (jm) filterParts.push(`jenis media: "${jm.nama_jenis}"`);
+                        }
+                        if (tanggalDari && tanggalSampai) filterParts.push(`tanggal: ${tanggalDari} s/d ${tanggalSampai}`);
+                        else if (tanggalDari) filterParts.push(`tanggal: dari ${tanggalDari}`);
+                        else if (tanggalSampai) filterParts.push(`tanggal: sampai ${tanggalSampai}`);
+                        filterInfo = filterParts.join(', ');
+                    }
+
+                    res.render('LaporanStaff/laporan_list', {
+                        title: 'Laporan Staff',
+                        data: dataFormatted,
+                        JENIS_MAP,
+                        currentPage: 'laporan',
+                        pimpinanList,
+                        jenisList,
+                        jenisMediaList,
+                        searchJudul,
+                        searchIsi,
+                        filterPimpinan,
+                        filterJenis: filterJenisLaporan,
+                        filterJenisMedia,
+                        tanggalDari,
+                        tanggalSampai,
+                        hasFilter,
+                        filterInfo,
+                        pagination: {
+                            currentPage: page,
+                            totalPages,
+                            totalData,
+                            startRecord: totalData > 0 ? offset + 1 : 0,
+                            endRecord: Math.min(offset + limit, totalData),
+                            hasNext: page < totalPages,
+                            hasPrev: page > 1,
+                            limit
+                        }
+                    });
                 });
             });
         });

@@ -480,6 +480,34 @@
                         </nav>
                     </div>
                 </div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle-custom database-toggle" onclick="toggleDatabaseDropdown()"
+                        role="button">
+                        <i class="bi bi-database"></i> Database Media
+                        <i class="bi bi-chevron-down dropdown-arrow ms-auto"></i>
+                    </a>
+                    <div class="collapse <%= ['media-online', 'media-cetak', 'tv', 'radio'].includes(currentPage) ? 'show' : '' %>"
+                        id="databaseSubmenu">
+                        <nav class="nav flex-column">
+                            <a class="nav-link submenu-link <%= currentPage === 'media-online' ? 'active' : '' %>"
+                                href="/media">
+                                <i class="bi bi-globe"></i> Media Online
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'media-cetak' ? 'active' : '' %>"
+                                href="/media-cetak">
+                                <i class="bi bi-newspaper"></i> Media Cetak
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'tv' ? 'active' : '' %>"
+                                href="/tv">
+                                <i class="bi bi-tv"></i> TV
+                            </a>
+                            <a class="nav-link submenu-link <%= currentPage === 'radio' ? 'active' : '' %>"
+                                href="/radio">
+                                <i class="bi bi-broadcast"></i> Radio
+                            </a>
+                        </nav>
+                    </div>
+                </div>
                 <a class="nav-link <%= currentPage === 'laporan' ? 'active' : '' %>" href="/laporan">
                     <i class="bi bi-file-text"></i> Laporan Staff
                 </a>
@@ -592,6 +620,14 @@
         function toggleHighlightDropdown() {
             const collapse = document.getElementById('highlightSubmenu');
             const toggle = document.querySelector('.highlight-toggle');
+            collapse.classList.toggle('show');
+            const isExpanded = collapse.classList.contains('show');
+            toggle.setAttribute('aria-expanded', isExpanded);
+        }
+
+        function toggleDatabaseDropdown() {
+            const collapse = document.getElementById('databaseSubmenu');
+            const toggle = document.querySelector('.database-toggle');
             collapse.classList.toggle('show');
             const isExpanded = collapse.classList.contains('show');
             toggle.setAttribute('aria-expanded', isExpanded);

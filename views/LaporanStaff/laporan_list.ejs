@@ -13,7 +13,7 @@
                 <i class="bi bi-plus-lg"></i> Tambah
             </a>
             <a href="/laporan/calendar" class="btn btn-outline-primary">
-                <i class="bi bi-calendar-range"></i> Clastering
+                <i class="bi bi-calendar-range"></i> Clustering
             </a>
         </div>
     </div>
@@ -304,6 +304,7 @@
             if (searchIsi) params.append('search_isi', searchIsi);
             if (filterPimpinan) params.append('pimpinan', filterPimpinan);
             if (filterJenis) params.append('jenis', filterJenis);
+            if (filterJenisMedia) params.append('jenis_media', filterJenisMedia);
             if (tanggalDari) params.append('tanggal_dari', tanggalDari);
             if (tanggalSampai) params.append('tanggal_sampai', tanggalSampai);
             if (pagination.limit && pagination.limit !== 5) params.append('limit', pagination.limit);
@@ -474,6 +475,22 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="jenis_media" class="form-label">
+                                        <i class="bi bi-tv me-1"></i>Jenis Media
+                                    </label>
+                                    <select name="jenis_media" id="jenis_media" class="form-select">
+                                        <option value="">Semua Jenis Media</option>
+                                        <% jenisMediaList.forEach(function(j) { %>
+                                            <option value="<%= j.id_jenis %>" <%=filterJenisMedia===j.id_jenis ? 'selected' : '' %>>
+                                                <%= j.nama_jenis %>
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                        </div>
+
                         <hr class="my-3">
 
                         <div class="row mb-3">
@@ -583,14 +600,16 @@
             const searchIsi = '<%= searchIsi %>';
             const filterPimpinan = '<%= filterPimpinan %>';
             const filterJenis = '<%= filterJenis %>';
+            const filterJenisMedia = '<%= filterJenisMedia %>';
             const tanggalDari = '<%= tanggalDari %>';
             const tanggalSampai = '<%= tanggalSampai %>';
-            
+
             // Tambahkan parameter yang ada (hanya jika tidak kosong)
             if (searchJudul && searchJudul !== '') params.append('search_judul', searchJudul);
             if (searchIsi && searchIsi !== '') params.append('search_isi', searchIsi);
             if (filterPimpinan && filterPimpinan !== '') params.append('pimpinan', filterPimpinan);
             if (filterJenis && filterJenis !== '') params.append('jenis', filterJenis);
+            if (filterJenisMedia && filterJenisMedia !== '') params.append('jenis_media', filterJenisMedia);
             if (tanggalDari && tanggalDari !== '') params.append('tanggal_dari', tanggalDari);
             if (tanggalSampai && tanggalSampai !== '') params.append('tanggal_sampai', tanggalSampai);
             
@@ -888,15 +907,15 @@
         }
 
         function forceResetFilter() {
-            
+
             // 1. Reset form secara paksa
             const form = document.getElementById('filterForm');
             if (form) {
                 form.reset();
             }
-            
+
             // 2. Reset manual setiap field
-            const fieldIds = ['search_judul', 'search_isi', 'pimpinan', 'jenis', 'tanggalDari', 'tanggalSampai'];
+            const fieldIds = ['search_judul', 'search_isi', 'pimpinan', 'jenis', 'jenis_media', 'tanggalDari', 'tanggalSampai'];
             fieldIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -904,12 +923,12 @@
                     el.selectedIndex = 0; // untuk select
                 }
             });
-            
+
             // 3. Clear ALL possible storage
             sessionStorage.clear();
             localStorage.removeItem('laporanFilter');
             sessionStorage.removeItem('laporanFilter');
-            
+
             // 4. Langsung redirect tanpa delay
             window.location.href = '/laporan';
         }

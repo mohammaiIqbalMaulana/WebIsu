@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h1><%= title %></h1>
+        <a href="/media/create" class="btn btn-primary mb-3">
+            <i class="bi bi-plus-circle"></i> Tambah Media Online
+        </a>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Media</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (media && media.length > 0) { %>
+                        <% media.forEach(function(item, index) { %>
+                            <tr>
+                                <td><%= index + 1 %></td>
+                                <td><%= item.nama_media %></td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <% if (item.file_path && item.file_name) { %>
+                                            <div class="mb-1">
+                                                <small class="text-muted fw-bold">File:</small><br>
+                                                <div class="file-name-display" title="<%= item.file_name %>">
+                                                    <i class="bi bi-file-earmark me-1"></i>
+                                                    <%= item.file_name.length > 25 ? item.file_name.substring(0, 25) + '...' : item.file_name %>
+                                                </div>
+                                            </div>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="<%= item.file_path %>" class="btn btn-success" target="_blank" title="Download <%= item.file_name %>">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                <a href="/media/edit/<%= item.id %>" class="btn btn-warning" title="Edit Media">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="/media/delete/<%= item.id %>"
+                                                   onclick="return confirm('Yakin ingin menghapus media ini?')"
+                                                   class="btn btn-danger" title="Hapus Media">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        <% } else { %>
+                                            <div class="mb-1">
+                                                <small class="text-muted fw-bold">File:</small><br>
+                                                <div class="file-name-display">
+                                                    <i class="bi bi-file-earmark-x me-1"></i>Tidak ada file
+                                                </div>
+                                            </div>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="/media/edit/<%= item.id %>" class="btn btn-warning" title="Edit Media">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="/media/delete/<%= item.id %>"
+                                                   onclick="return confirm('Yakin ingin menghapus media ini?')"
+                                                   class="btn btn-danger" title="Hapus Media">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="3" class="text-center">Tidak ada data media online.</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .btn-group .btn {
+            margin-right: 2px;
+        }
+
+        .btn-group .btn:last-child {
+            margin-right: 0;
+        }
+
+        .file-name-display {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #495057;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background-color: #f8f9fa;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+            display: inline-block;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .btn-group {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .btn-group .btn {
+                margin-right: 0;
+                width: 100%;
+                font-size: 0.875rem;
+                padding: 0.375rem 0.75rem;
+            }
+
+            .badge {
+                max-width: 150px;
+            }
+
+            .d-flex.flex-column {
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .btn-group .btn {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .badge {
+                max-width: 120px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</body>
+
+</html>

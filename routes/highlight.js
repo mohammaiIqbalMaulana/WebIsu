@@ -53,20 +53,23 @@ function parseKewenanganText(kewenanganStr) {
     }
 }
 
-// Monitoring Prioritas dengan filtering dan pagination
+// Monitoring Prioritas dengan filtering
 router.get('/monitoring-prioritas', async (req, res) => {
     try {
-        const {
+        let {
             tanggal_dari,
             tanggal_sampai,
             stakeholder,
             kewenangan,
-            search,
-            page = 1,
-            limit = 9
+            search
         } = req.query;
 
-        const offset = (page - 1) * limit;
+        // Clean undefined string values
+        if (tanggal_dari === 'undefined') tanggal_dari = undefined;
+        if (tanggal_sampai === 'undefined') tanggal_sampai = undefined;
+        if (stakeholder === 'undefined') stakeholder = undefined;
+        if (kewenangan === 'undefined') kewenangan = undefined;
+        if (search === 'undefined') search = undefined;
 
         // Build query dengan join ke tabel OPD
         let query = `
@@ -110,38 +113,11 @@ router.get('/monitoring-prioritas', async (req, res) => {
         // Group by untuk menghindari duplikasi
         query += ' GROUP BY lp.id';
 
-        // Count query untuk pagination (sama seperti sebelumnya)
-        const countQuery = `
-            SELECT COUNT(DISTINCT lp.id) as total 
-            FROM laporan_pimpinan lp
-            WHERE lp.jenis_laporan = 1 AND lp.is_deleted = 0
-            ${tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan BETWEEN ? AND ?' : ''}
-            ${tanggal_dari && !tanggal_sampai ? ' AND lp.tanggal_laporan >= ?' : ''}
-            ${!tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan <= ?' : ''}
-            ${stakeholder ? ' AND lp.stakeholder LIKE ?' : ''}
-            ${kewenangan ? ' AND lp.kewenangan LIKE ?' : ''}
-            ${search ? ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)' : ''}
-        `;
-        
-        const countParams = [];
-        if (tanggal_dari && tanggal_sampai) countParams.push(tanggal_dari, tanggal_sampai);
-        else if (tanggal_dari) countParams.push(tanggal_dari);
-        else if (tanggal_sampai) countParams.push(tanggal_sampai);
-        if (stakeholder) countParams.push(`%${stakeholder}%`);
-        if (kewenangan) countParams.push(`%${kewenangan}%`);
-        if (search) countParams.push(`%${search}%`, `%${search}%`);
-
-        const [countResult] = await db.promise().query(countQuery, countParams);
-        const totalData = countResult[0].total;
-        const totalPages = Math.ceil(totalData / limit);
-
         // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
-        query += ` ORDER BY 
-            lp.tanggal_laporan DESC, 
+        query += ` ORDER BY
+            lp.tanggal_laporan DESC,
             COALESCE(lp.created_at, lp.updated_at) DESC,
-            lp.id DESC 
-            LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), offset);
+            lp.id DESC`;
 
         const [rows] = await db.promise().query(query, params);
 
@@ -195,28 +171,20 @@ router.get('/monitoring-prioritas', async (req, res) => {
         const [opdData] = await db.promise().query(
             "SELECT id, nama_opd FROM opd WHERE is_deleted = 0 ORDER BY nama_opd ASC"
         );
-        
+
         res.render('highlight/monitoring-prioritas', {
             layout: 'layout',
             title: 'Monitoring Isu Prioritas',
             highlight,
             laporanKecil,
             currentPage: 'monitoring-prioritas',
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages,
-                totalData,
-                hasPrev: page > 1,
-                hasNext: page < totalPages,
-                prevPage: page > 1 ? page - 1 : null,
-                nextPage: page < totalPages ? page + 1 : null
-            },
+            totalData: processedRows.length,
             filters: {
-                tanggal_dari,
-                tanggal_sampai,
-                stakeholder,
-                kewenangan,
-                search
+                ...(tanggal_dari && { tanggal_dari }),
+                ...(tanggal_sampai && { tanggal_sampai }),
+                ...(stakeholder && { stakeholder }),
+                ...(kewenangan && { kewenangan }),
+                ...(search && { search })
             },
             opdData
         });
@@ -226,20 +194,23 @@ router.get('/monitoring-prioritas', async (req, res) => {
     }
 });
 
-// Monitoring Khusus dengan filtering dan pagination
+// Monitoring Khusus dengan filtering
 router.get('/monitoring-khusus', async (req, res) => {
     try {
-        const {
+        let {
             tanggal_dari,
             tanggal_sampai,
             stakeholder,
             kewenangan,
-            search,
-            page = 1,
-            limit = 9
+            search
         } = req.query;
 
-        const offset = (page - 1) * limit;
+        // Clean undefined string values
+        if (tanggal_dari === 'undefined') tanggal_dari = undefined;
+        if (tanggal_sampai === 'undefined') tanggal_sampai = undefined;
+        if (stakeholder === 'undefined') stakeholder = undefined;
+        if (kewenangan === 'undefined') kewenangan = undefined;
+        if (search === 'undefined') search = undefined;
 
         let query = `
             SELECT 
@@ -280,37 +251,11 @@ router.get('/monitoring-khusus', async (req, res) => {
 
         query += ' GROUP BY lp.id';
 
-        const countQuery = `
-            SELECT COUNT(DISTINCT lp.id) as total 
-            FROM laporan_pimpinan lp
-            WHERE lp.jenis_laporan = 2 AND lp.is_deleted = 0
-            ${tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan BETWEEN ? AND ?' : ''}
-            ${tanggal_dari && !tanggal_sampai ? ' AND lp.tanggal_laporan >= ?' : ''}
-            ${!tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan <= ?' : ''}
-            ${stakeholder ? ' AND lp.stakeholder LIKE ?' : ''}
-            ${kewenangan ? ' AND lp.kewenangan LIKE ?' : ''}
-            ${search ? ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)' : ''}
-        `;
-        
-        const countParams = [];
-        if (tanggal_dari && tanggal_sampai) countParams.push(tanggal_dari, tanggal_sampai);
-        else if (tanggal_dari) countParams.push(tanggal_dari);
-        else if (tanggal_sampai) countParams.push(tanggal_sampai);
-        if (stakeholder) countParams.push(`%${stakeholder}%`);
-        if (kewenangan) countParams.push(`%${kewenangan}%`);
-        if (search) countParams.push(`%${search}%`, `%${search}%`);
-
-        const [countResult] = await db.promise().query(countQuery, countParams);
-        const totalData = countResult[0].total;
-        const totalPages = Math.ceil(totalData / limit);
-
         // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
-        query += ` ORDER BY 
-            lp.tanggal_laporan DESC, 
+        query += ` ORDER BY
+            lp.tanggal_laporan DESC,
             COALESCE(lp.created_at, lp.updated_at) DESC,
-            lp.id DESC 
-            LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), offset);
+            lp.id DESC`;
 
         const [rows] = await db.promise().query(query, params);
 
@@ -368,21 +313,13 @@ router.get('/monitoring-khusus', async (req, res) => {
             highlight,
             laporanKecil,
             currentPage: 'monitoring-khusus',
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages,
-                totalData,
-                hasPrev: page > 1,
-                hasNext: page < totalPages,
-                prevPage: page > 1 ? page - 1 : null,
-                nextPage: page < totalPages ? page + 1 : null
-            },
+            totalData: processedRows.length,
             filters: {
-                tanggal_dari,
-                tanggal_sampai,
-                stakeholder,
-                kewenangan,
-                search
+                ...(tanggal_dari && { tanggal_dari }),
+                ...(tanggal_sampai && { tanggal_sampai }),
+                ...(stakeholder && { stakeholder }),
+                ...(kewenangan && { kewenangan }),
+                ...(search && { search })
             },
             opdData
         });
@@ -392,20 +329,23 @@ router.get('/monitoring-khusus', async (req, res) => {
     }
 });
 
-// Monitoring Khusus dengan filtering dan pagination
+// Monitoring Viralitas dengan filtering dan pagination
 router.get('/monitoring-viralitas', async (req, res) => {
     try {
-        const {
+        let {
             tanggal_dari,
             tanggal_sampai,
             stakeholder,
             kewenangan,
-            search,
-            page = 1,
-            limit = 9
+            search
         } = req.query;
 
-        const offset = (page - 1) * limit;
+        // Clean undefined string values
+        if (tanggal_dari === 'undefined') tanggal_dari = undefined;
+        if (tanggal_sampai === 'undefined') tanggal_sampai = undefined;
+        if (stakeholder === 'undefined') stakeholder = undefined;
+        if (kewenangan === 'undefined') kewenangan = undefined;
+        if (search === 'undefined') search = undefined;
 
         let query = `
             SELECT 
@@ -446,37 +386,11 @@ router.get('/monitoring-viralitas', async (req, res) => {
 
         query += ' GROUP BY lp.id';
 
-        const countQuery = `
-            SELECT COUNT(DISTINCT lp.id) as total 
-            FROM laporan_pimpinan lp
-            WHERE lp.jenis_laporan = 3 AND lp.is_deleted = 0
-            ${tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan BETWEEN ? AND ?' : ''}
-            ${tanggal_dari && !tanggal_sampai ? ' AND lp.tanggal_laporan >= ?' : ''}
-            ${!tanggal_dari && tanggal_sampai ? ' AND lp.tanggal_laporan <= ?' : ''}
-            ${stakeholder ? ' AND lp.stakeholder LIKE ?' : ''}
-            ${kewenangan ? ' AND lp.kewenangan LIKE ?' : ''}
-            ${search ? ' AND (lp.judul LIKE ? OR lp.isi_laporan LIKE ?)' : ''}
-        `;
-        
-        const countParams = [];
-        if (tanggal_dari && tanggal_sampai) countParams.push(tanggal_dari, tanggal_sampai);
-        else if (tanggal_dari) countParams.push(tanggal_dari);
-        else if (tanggal_sampai) countParams.push(tanggal_sampai);
-        if (stakeholder) countParams.push(`%${stakeholder}%`);
-        if (kewenangan) countParams.push(`%${kewenangan}%`);
-        if (search) countParams.push(`%${search}%`, `%${search}%`);
-
-        const [countResult] = await db.promise().query(countQuery, countParams);
-        const totalData = countResult[0].total;
-        const totalPages = Math.ceil(totalData / limit);
-
         // FIXED: Pengurutan berdasarkan tanggal laporan DESC, lalu created_at DESC
-        query += ` ORDER BY 
-            lp.tanggal_laporan DESC, 
+        query += ` ORDER BY
+            lp.tanggal_laporan DESC,
             COALESCE(lp.created_at, lp.updated_at) DESC,
-            lp.id DESC 
-            LIMIT ? OFFSET ?`;
-        params.push(parseInt(limit), offset);
+            lp.id DESC`;
 
         const [rows] = await db.promise().query(query, params);
 
@@ -534,21 +448,13 @@ router.get('/monitoring-viralitas', async (req, res) => {
             highlight,
             laporanKecil,
             currentPage: 'monitoring-viralitas',
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages,
-                totalData,
-                hasPrev: page > 1,
-                hasNext: page < totalPages,
-                prevPage: page > 1 ? page - 1 : null,
-                nextPage: page < totalPages ? page + 1 : null
-            },
+            totalData: processedRows.length,
             filters: {
-                tanggal_dari,
-                tanggal_sampai,
-                stakeholder,
-                kewenangan,
-                search
+                ...(tanggal_dari && { tanggal_dari }),
+                ...(tanggal_sampai && { tanggal_sampai }),
+                ...(stakeholder && { stakeholder }),
+                ...(kewenangan && { kewenangan }),
+                ...(search && { search })
             },
             opdData
         });
